@@ -126,54 +126,72 @@ Results Visualizations:
 
 ### Exogenous Variables
 - Labor Force Growth (n)
-- Foreign Income Growth
-- Domestic Interest Rate
-- Foreign Interest Rate
-- Openness Ratio
-- FDI Ratio
+- Foreign Income (\(Y_t^*\))
+- Baseline Market Exchange Rate (\(e_{market, t}\))
+- Openness Ratio (\(openness\_ratio_t\))
+- FDI Ratio (\(fdi\_ratio_t\))
 
 ### Student-Determined Variables (Exogenous, set by students each round)
-- **Savings Rate (s)**: Chosen explicitly by students, no fixed default (initial suggested default at 10%)
-- **Exchange Rate (e)**: Determined by students' choice each round:
-  - Undervalue: 20% lower than the market baseline
-  - Market-Based: Baseline market exchange rate
-  - Overvalue: 20% higher than the market baseline
+- **Savings Rate (s)**: Chosen explicitly by students (1%–99%).
+- **Exchange Rate Policy (\(e\_policy\))**: Determines the actual exchange rate (\(e_t\)) relative to the baseline market rate (\(e_{market, t}\)):
+  - Undervalue: \(e_t = e_{market, t} \times 1.2\) (Makes exports cheaper, imports dearer)
+  - Market-Based: \(e_t = e_{market, t}\)
+  - Overvalue: \(e_t = e_{market, t} \times 0.8\) (Makes exports dearer, imports cheaper)
 
 ### Model Equations (Explicitly Defined)
 - **Production**: \(Y(t) = A(t) \times K(t)^\alpha \times (L(t) \times H(t))^{(1-\alpha)}\)
-- **Capital Accumulation**: \(K(t+1) = (1 - \delta) \times K(t) + s \times Y(t) + NX(t)\)
+- **Capital Accumulation**: \(K(t+1) = (1 - \delta) \times K(t) + I(t)\)
+- **Investment**: \(I(t) = s \times Y(t) + NX(t)\)
 - **Labor Force Growth**: \(L(t+1) = L(t) \times (1+n)\)
 - **Human Capital Growth**: \(H(t+1) = H(t) \times (1+\eta)\)
-- **Productivity Growth**: \(A(t+1) = A(t) \times (1 + g + \theta \times openness\_ratio + \phi \times fdi\_ratio)\)
-- **Net Exports**: \(NX(t) = \beta \times (domestic\_interest\_rate - foreign\_interest\_rate)\)
+- **Productivity Growth**: \(A(t+1) = A(t) \times (1 + g + \theta \times openness\_ratio_t + \phi \times fdi\_ratio_t)\)
+- **Net Exports**: 
+  \[ NX(t) = X_0 \left(\frac{e_t}{e_{1980}}\right)^{\varepsilon_x}\left(\frac{Y_t^*}{Y_{1980}^*}\right)^{\mu_x} - M_0\left(\frac{e_t}{e_{1980}}\right)^{-\varepsilon_m}\left(\frac{Y_t}{Y_{1980}}\right)^{\mu_m} \]
+  Where \(e_t\) is determined by the student's policy choice (see above).
 
 ### Explicit Parameters
-- \(\alpha = 0.3\)
-- \(\delta = 0.1\)
-- \(g = 0.005\)
-- \(\theta = 0.1453\)
-- \(\phi = 0.1\)
-- \(\beta = -90\)
-- \(n = 0.00717\)
-- \(\eta = 0.02\)
+- **Production & Accumulation**:
+  - \(\alpha = 0.3\)
+  - \(\delta = 0.1\)
+  - \(g = 0.005\)
+  - \(\theta = 0.1453\)
+  - \(\phi = 0.1\)
+  - \(n = 0.00717\)
+  - \(\eta = 0.02\)
+- **Net Exports**:
+  - Initial Exports (1980): \(X_0 = 18.1\)
+  - Initial Imports (1980): \(M_0 = 14.5\)
+  - Exchange Rate Elasticity (Exports): \(\varepsilon_x = 1.5\)
+  - Exchange Rate Elasticity (Imports): \(\varepsilon_m = 1.2\)
+  - Foreign Income Elasticity (Exports): \(\mu_x = 1.0\)
+  - Domestic Income Elasticity (Imports): \(\mu_m = 1.0\)
+- **Base Values**: 
+  - Initial Exchange Rate (1980): \(e_{1980} = 1.5\)
+  - Initial Foreign Income (1980): \(Y_{1980}^* = 1000\) (arbitrary units)
+  - Initial Domestic Income (1980): \(Y_{1980}\) (Use the actual initial GDP value assigned to teams)
 
-### Explicit Exogenous Variables
-- Foreign income growth: 3% per year.
-- Domestic interest rate: 4% annually.
-- Foreign interest rate: 8% annually.
-- Openness ratio: starts at 0.1 and increases gradually.
-- FDI ratio (post-1990): 0.02.
+### Explicit Exogenous Variables (Formulas)
+- **Baseline Market Exchange Rate**: Linear interpolation from 1.5 (1980) to 7.0 (2020). For round index \(r = 0, ..., 9\): \(e_{market, t} = 1.5 + (7.0 - 1.5) \times r / 9\)
+- **Foreign Income**: Starts at 1000 in 1980, grows 3% annually (compounded over 5 years per round). For round index \(r = 0, ..., 9\): \(Y_t^* = 1000 \times (1.03^{5r})\)
+- **Openness Ratio**: Starts at 0.1 in 1980 (round 0), increases by 0.02 per round. For round index \(r = 0, ..., 9\): \(openness\_ratio_t = 0.1 + 0.02 \times r\)
+- **FDI Ratio**: \(fdi\_ratio_t = 0.02\) if year >= 1990, else 0.
+- **Labor Force Growth (\(n\))** and **Human Capital Growth (\(\eta\))** applied each round based on parameters above.
 
 ## Step-by-Step Computation (Explicitly Detailed)
-- Each Round:
-  1. Input current GDP, capital stock, labor force, human capital, and productivity values.
-  2. Apply student-selected savings rate and exchange rate explicitly.
-  3. Compute GDP explicitly using the production equation.
-  4. Update capital stock explicitly with capital accumulation equation.
-  5. Update labor force explicitly.
-  6. Update human capital explicitly.
-  7. Update productivity explicitly.
-  8. Compute net exports explicitly.
+- Each Round (indexed by \(r = 0, ..., 9\), corresponding to start years \(1980, ..., 2020\)):
+  1. Input current state \(K_t, L_t, H_t, A_t\). Get student inputs \(s, e\_policy\).
+  2. Determine baseline exogenous variables for this round: \(e_{market, t}\), \(Y_t^*\), \(openness\_ratio_t\), \(fdi\_ratio_t\).
+  3. Determine actual exchange rate \(e_t\) based on \(e_{market, t}\) and \(e\_policy\).
+  4. Compute current GDP \(Y_t\) using the Production equation.
+  5. Compute Net Exports \(NX_t\) using the Net Exports equation with \(e_t\), \(Y_t^*\), \(Y_t\), and base values.
+  6. Compute Investment \(I_t = s \times Y_t + NX_t\).
+  7. Compute Consumption \(C_t = (1-s) \times Y_t\).
+  8. Update state variables for the start of the next round (\(t+1\)):
+     - \(K_{t+1} = (1 - \delta) K_t + I_t\)
+     - \(L_{t+1} = L_t (1+n)\)
+     - \(H_{t+1} = H_t (1+\eta)\)
+     - \(A_{t+1} = A_t (1 + g + \theta \times openness\_ratio_t + \phi \times fdi\_ratio_t)\)
+  9. Store calculated values (\(Y_t, NX_t, C_t, I_t\)) and next state (\(K_{t+1}, L_{t+1}, H_{t+1}, A_{t+1}\)) for the team.
 
 ## Prize Determination (Explicit Criteria)
 - **Highest GDP Growth**: Highest GDP value in the final round.
@@ -182,3 +200,4 @@ Results Visualizations:
 
 This specification provides thorough and explicit details designed to facilitate seamless implementation by any developer or system operator.
 
+## Proposed Versions (starting point, can use newer ones)
