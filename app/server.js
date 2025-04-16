@@ -7,6 +7,11 @@ require('dotenv').config();
 
 const EconomicModelService = require('./services/economic-model-service');
 
+// Import routes
+const gameRoutes = require('./routes/game-routes');
+const teamRoutes = require('./routes/team-routes');
+const resultsRoutes = require('./routes/results-routes');
+
 // Initialize services
 const economicModelService = new EconomicModelService();
 
@@ -39,15 +44,79 @@ app.get('/api/economic-model/health', async (req, res) => {
   }
 });
 
+// API routes
+app.use('/api/game', gameRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/results', resultsRoutes);
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
   
+  // Send initial game state to new clients
+  economicModelService.getGameState()
+    .then(gameState => {
+      socket.emit('gameState', gameState);
+    })
+    .catch(error => {
+      console.error('Failed to get initial game state:', error.message);
+    });
+  
+  // Handle team creation
+  socket.on('createTeam', async (teamName) => {
+    try {
+      const team = await economicModelService.createTeam(teamName);
+      io.emit('teamCreated', team);
+      
+      // Update all clients with new game state
+      const gameState = await economicModelService.getGameState();
+      io.emit('gameState', gameState);
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to create team', error: error.message });
+    }
+  });
+  
+  // Handle team decision submission
+  socket.on('submitDecision', async ({ teamId, savingsRate, exchangeRatePolicy }) => {
+    try {
+      const decision = await economicModelService.submitDecision(
+        teamId,
+        savingsRate,
+        exchangeRatePolicy
+      );
+      socket.emit('decisionSubmitted', decision);
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to submit decision', error: error.message });
+    }
+  });
+  
+  // Handle game state changes (for professor)
+  socket.on('startGame', async () => {
+    try {
+      const gameState = await economicModelService.startGame();
+      io.emit('gameStarted', gameState);
+      io.emit('gameState', gameState);
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to start game', error: error.message });
+    }
+  });
+  
+  socket.on('advanceRound', async () => {
+    try {
+      const result = await economicModelService.advanceRound();
+      io.emit('roundAdvanced', result);
+      
+      // Update all clients with new game state
+      const gameState = await economicModelService.getGameState();
+      io.emit('gameState', gameState);
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to advance round', error: error.message });
+    }
+  });
+  
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
-  
-  // Game-specific events will be added here
 });
 
 // Start server

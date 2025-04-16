@@ -21,12 +21,110 @@ class EconomicModelService {
     }
   }
 
+  // Legacy method for backward compatibility
   async runSimulation(simulationData) {
     try {
       const response = await this.client.post('/simulate', simulationData);
       return response.data;
     } catch (error) {
       console.error('Economic model simulation failed:', error.message);
+      throw error;
+    }
+  }
+
+  // Game flow methods
+  async initializeGame() {
+    try {
+      const response = await this.client.post('/game/init');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to initialize game:', error.message);
+      throw error;
+    }
+  }
+
+  async startGame() {
+    try {
+      const response = await this.client.post('/game/start');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to start game:', error.message);
+      throw error;
+    }
+  }
+
+  async advanceRound() {
+    try {
+      const response = await this.client.post('/game/next-round');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to advance round:', error.message);
+      throw error;
+    }
+  }
+
+  async getGameState() {
+    try {
+      const response = await this.client.get('/game/state');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get game state:', error.message);
+      throw error;
+    }
+  }
+
+  // Team management methods
+  async createTeam(teamName = null) {
+    try {
+      const response = await this.client.post('/teams/create', { team_name: teamName });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create team:', error.message);
+      throw error;
+    }
+  }
+
+  async submitDecision(teamId, savingsRate, exchangeRatePolicy) {
+    try {
+      const response = await this.client.post('/teams/decisions', {
+        team_id: teamId,
+        savings_rate: savingsRate,
+        exchange_rate_policy: exchangeRatePolicy
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to submit decision:', error.message);
+      throw error;
+    }
+  }
+
+  async getTeamState(teamId) {
+    try {
+      const response = await this.client.get(`/teams/${teamId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get team state for ${teamId}:`, error.message);
+      throw error;
+    }
+  }
+
+  // Results and visualization methods
+  async getRankings() {
+    try {
+      const response = await this.client.get('/results/rankings');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get rankings:', error.message);
+      throw error;
+    }
+  }
+
+  async getTeamVisualizations(teamId) {
+    try {
+      const response = await this.client.get(`/results/visualizations/${teamId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get visualizations for team ${teamId}:`, error.message);
       throw error;
     }
   }
