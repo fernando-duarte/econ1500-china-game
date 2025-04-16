@@ -1,10 +1,9 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
 import uvicorn
 from game_state import GameState
-from solow_model import solve_solow_model
 
 # Create a single instance of the game state to be used for all requests
 # This implements in-memory state management as requested
@@ -50,13 +49,15 @@ class DecisionSubmitRequest(BaseModel):
     savings_rate: float = Field(..., ge=0.01, le=0.99)
     exchange_rate_policy: str = Field(..., pattern='^(undervalue|market|overvalue)$')
     
-    @validator('savings_rate')
+    @field_validator('savings_rate')
+    @classmethod
     def validate_savings_rate(cls, v):
         if not (0.01 <= v <= 0.99):
             raise ValueError("Savings rate must be between 1% and 99%")
         return v
     
-    @validator('exchange_rate_policy')
+    @field_validator('exchange_rate_policy')
+    @classmethod
     def validate_exchange_rate_policy(cls, v):
         if v not in ["undervalue", "market", "overvalue"]:
             raise ValueError("Exchange rate policy must be 'undervalue', 'market', or 'overvalue'")
@@ -74,37 +75,6 @@ class GameStateResponse(BaseModel):
 @app.get("/")
 def read_root():
     return {"message": "China's Growth Game Economic Model API"}
-
-# Legacy endpoint for backward compatibility
-@app.post("/simulate", response_model=SimulationResponse)
-def run_simulation(request: SimulationRequest):
-    try:
-        # Convert pydantic models to dicts
-        initial_conditions = request.initial_conditions.dict()
-        parameters = request.parameters.dict()
-        
-        # Convert years list to numpy array
-        years = np.array(request.years)
-        
-        # Run the Solow model simulation
-        results_df = solve_solow_model(
-            request.initial_year,
-            initial_conditions,
-            parameters,
-            years,
-            request.historical_data
-        )
-        
-        # Convert results to dict for response
-        results_dict = {
-            column: results_df[column].tolist() 
-            for column in results_df.columns
-        }
-        
-        return {"results": results_dict}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 # Game flow endpoints
 @app.post("/game/init", response_model=GameStateResponse)
@@ -128,9 +98,22 @@ def advance_to_next_round():
     """Advance to the next round, processing all team decisions."""
     try:
         result = game_state.advance_round()
+        # Log the result for debugging
+        import logging
+        logging.debug(f"Advance round result: {result}")
+        
+        # If we got a successful result, return it
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # More detailed error reporting for debugging
+        import traceback
+        error_detail = {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @app.get("/game/state", response_model=GameStateResponse)
 def get_game_state():
@@ -172,7 +155,7 @@ def get_team_state(team_id: str):
 @app.get("/results/rankings")
 def get_rankings():
     """Get current rankings."""
-    return game_state.rankings
+    return game_state.rankings_manager.rankings
 
 @app.get("/results/visualizations/{team_id}")
 def get_team_visualizations(team_id: str):
