@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>China's Growth Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>China's Growth Game: Saving, Trade, and Prosperity (1980–2025)</h1>
+    
+    <div id="server-status" class="status">Checking server status...</div>
+    <div id="model-status" class="status">Checking economic model status...</div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check server status
+            try {
+                const serverResponse = await fetch('/api/health');
+                const serverData = await serverResponse.json();
+                
+                const serverStatusEl = document.getElementById('server-status');
+                serverStatusEl.textContent = `Server Status: ${serverData.status}`;
+                serverStatusEl.classList.add('success');
+            } catch (error) {
+                const serverStatusEl = document.getElementById('server-status');
+                serverStatusEl.textContent = `Server Error: ${error.message}`;
+                serverStatusEl.classList.add('error');
+            }
+            
+            // Check economic model status via the backend
+            try {
+                const modelResponse = await fetch('/api/economic-model/health');
+                const modelData = await modelResponse.json();
+                
+                const modelStatusEl = document.getElementById('model-status');
+                modelStatusEl.textContent = `Economic Model Status: Connected`;
+                modelStatusEl.classList.add('success');
+            } catch (error) {
+                const modelStatusEl = document.getElementById('model-status');
+                modelStatusEl.textContent = `Economic Model Error: Could not connect`;
+                modelStatusEl.classList.add('error');
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - ECONOMIC_MODEL_URL=http://economic-model:8000
+      - NODE_ENV=development
+    volumes:
+      - ./app:/app/app
+    depends_on:
+      - economic-model
+    restart: unless-stopped
+
+  economic-model:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.economic-model
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./economic-model:/app
+    restart: unless-stopped 
