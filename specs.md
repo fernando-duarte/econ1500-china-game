@@ -1,78 +1,184 @@
-# Augmented Open-Economy Solow Model Simulation for China (1980–2024)
+# China's Growth Game: Saving, Trade, and Prosperity (1980–2025)
 
-## Model Description
+## Overview
+- **Game Type**: Interactive economic simulation
+- **Duration**: 50 minutes total
+- **Participants**: 80 undergraduates divided into 10 teams (8 students per team)
+- **Timeframe**: 1980–2025 (10 rounds, each representing 5 years: 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025)
 
-### Variables:
-- **GDP (Y)**: Economic output measured in billion USD.
-- **Capital Stock (K)**: Accumulated stock of physical capital (factories, infrastructure).
-- **Labor Force (L)**: Total active workforce in millions.
-- **Human Capital (H)**: Represents education and skill level, normalized initially to 1.
-- **Total Factor Productivity (A)**: Efficiency and technology level in production, normalized initially to 1.
-- **Net Exports (NX)**: Difference between exports and imports (billion USD).
-- **Savings Rate (s)**: Proportion of GDP saved annually.
-- **Openness Ratio**: Total trade (exports + imports) as a percentage of GDP.
-- **FDI Ratio**: Foreign Direct Investment inflows as a percentage of GDP.
-- **Population Growth (n)**: Annual growth rate of the labor force.
-- **Human Capital Growth (η)**: Annual growth rate of human capital.
+## Game Flow and Timing
+### Group Formation (3 minutes)
+- Students form groups by proximity.
+- Select one leader device per group.
 
-### Parameters (Optimized):
-- **Capital Share (α)**: 0.30
-- **Depreciation Rate (δ)**: 0.10
-- **Baseline TFP Growth (g)**: 0.005
-- **Openness Impact on TFP (θ)**: 0.1453
-- **FDI Impact on TFP (φ)**: 0.10
-- **Savings Rate (s)**: 0.20
-- **Interest Rate Sensitivity (β)**: -90
+### Group Naming (2 minutes)
+- UI auto-generates a default, fun economic-themed group name (e.g., "The Prosperous Pandas").
+- Students can generate alternative names or manually input their own.
+- Explicit confirmation required for the chosen name.
 
-## Initial Conditions (1980):
-- GDP: 306.2 billion USD
-- Capital Stock: 800 billion USD
-- Labor Force: 600 million
-- Human Capital: 1 (normalized)
-- TFP: 1 (normalized)
-- Net Exports: 3.6 billion USD
+### Gameplay (34 minutes)
+- Rounds 1–2: 5 minutes each (for familiarization).
+- Rounds 3–10: 4 minutes each (standard play).
 
-## Model Equations:
-1. **Production Function**:
-\[ Y(t) = A(t) K(t)^\alpha [L(t)H(t)]^{1-\alpha} \]
+### Discussion (8 minutes)
+- Instructor-led reflection and analysis of strategies and outcomes.
 
-2. **Capital Accumulation**:
-\[ K(t+1) = (1 - \delta) K(t) + sY(t) + NX(t) \]
+## Prizes (Announced at Start)
+### Categories
+- Highest GDP Growth
+- Highest Net Exports
+- Best Balanced Economy (combination of GDP and Consumption)
 
-3. **Human Capital Growth**:
-\[ H(t+1) = H(t)(1 + \eta) \]
+### Suggested Prizes
+- Gift cards, certificates, or economic-themed souvenirs.
 
-4. **Labor Force Growth**:
-\[ L(t+1) = L(t)(1 + n) \]
+## Student UI Components
 
-5. **TFP Growth (with openness and FDI)**:
-\[ A(t+1) = A(t)\left[1 + g + \theta \frac{X(t)+M(t)}{Y(t)} + \phi \frac{FDI(t)}{Y(t)}\right] \]
+### Dashboard (Always Visible)
+- Current Year
+- Group Name
+- Countdown Timer (e.g., ⏳ TIME LEFT: 4:30)
+- Economic Statistics:
+  - GDP
+  - Capital Stock
+  - Consumption
+  - Net Exports
+  - Previous Round GDP Growth (%)
+  - Current Ranking
 
-6. **Net Foreign Investment (NFI)** (assumed equal to NX for simplicity):
-\[ NX(t) = \beta(r_t - r_t^*) \]
+### Breaking News (Event Announcements)
+- Initial announcement without numeric details.
+- Numeric impact explicitly revealed at the end of each affected round.
 
-## Step-by-Step Annual Update Instructions:
-**Step 1: Compute GDP:**
-Using capital, labor, human capital, and productivity:
-\[ Y(t) = A(t) K(t)^\alpha (L(t)H(t))^{1-\alpha} \]
+#### Events
+- **2001**: China Joins WTO (Exports +25%, TFP +2% per year)
+- **2008**: Global Financial Crisis (Exports -20%, GDP growth -3%)
+- **2018**: US-China Trade War (Exports -10%)
+- **2020**: COVID-19 Pandemic (GDP growth -4%)
 
-**Step 2: Update Capital:**
-Depreciate existing capital and add new investment (savings plus net exports):
-\[ K(t+1) = (1-\delta)K(t) + sY(t) + NX(t) \]
+### Decision Controls
+- **Savings Rate Slider**: 1%–99%, default at 10%
+- **Exchange Rate Policy Buttons**:
+  - Undervalue (set exchange rate 20% lower than the market baseline)
+  - Market-Based (set at baseline market exchange rate)
+  - Overvalue (set exchange rate 20% higher than the market baseline)
+- Explicit submit button with confirmation step
 
-**Step 3: Update Labor Force:**
-\[ L(t+1) = L(t)(1+n) \]
+### Results Visualization
+- GDP Growth (line chart)
+- Trade Balance (bar graph)
+- Consumption vs. Savings (pie chart)
 
-**Step 4: Update Human Capital:**
-\[ H(t+1) = H(t)(1+\eta) \]
++--------------------------------------------+
+| Year: 2005                           ℹ️      |
+| Your GDP:             $2,500 bn            |
+| Your Capital Stock:   $1,800 bn            |
+| Your Consumption:     $1,200 bn            |
+| Your Net Exports:     +$200 bn             |
+| GDP Growth (last round): 8%                |
+| Ranking: #2 of 10 groups 🔥                |
++--------------------------------------------+
+| ⏳ TIME LEFT: 3:45                          |
++--------------------------------------------+
 
-**Step 5: Update Productivity (TFP):**
-\[ A(t+1) = A(t)\left[1+g+\theta \frac{X(t)+M(t)}{Y(t)}+\phi \frac{FDI(t)}{Y(t)}\right] \]
+BREAKING NEWS (2001): 🌎 China joins the WTO!
 
-**Step 6: Update Net Exports:**
-Adjust net exports based on interest rate differential (assumed constant for simplicity):
-\[ NX(t) = \beta(r_t - r_t^*) \]
+Decision Time!
+---------------
+Savings Rate: [ ▮▮▮▮▮▯▯▯▯▯▯ 45% ] 
+(Choose from 1% to 99%)
+---------------
+Exchange Rate Policy:
+🔵 [Undervalue]   ⚪ [Market-Based]   ⚪ [Overvalue]
 
-## Model Simulation Results
-The attached tables and plots compare the simulated model outcomes to actual historical data for China (1980–2024), demonstrating the accuracy and applicability of the model. For detailed numerical results, refer to the provided simulation tables and comparison analyses.
+[SUBMIT DECISIONS]
+
+Results Visualizations:
+- GDP Growth 📈
+- Trade Balance 📊
+- Consumption vs Savings 🥧
+
+
+## Professor Dashboard
+- Real-time leaderboard displaying:
+  - GDP ranking
+  - Net exports ranking
+  - Balanced economy ranking
+- Charts tracking overall class performance
+- Controls explicitly provided to start subsequent rounds
+- Capability to pause or restart the timer
+
+## Technical Setup
+- Students must connect to provided Wi-Fi.
+- Each group selects exactly one leader device for decision submissions.
+- All students may individually view progress but submissions are allowed only via the leader device.
+
+## Comprehensive Economic Model
+
+### Endogenous Variables
+- GDP (Y)
+- Capital Stock (K)
+- Human Capital (H)
+- Productivity (Total Factor Productivity, TFP, A)
+- Net Exports (NX)
+- Consumption (C)
+- Investment (I)
+
+### Exogenous Variables
+- Labor Force Growth (n)
+- Foreign Income Growth
+- Domestic Interest Rate
+- Foreign Interest Rate
+- Openness Ratio
+- FDI Ratio
+
+### Student-Determined Variables (Exogenous, set by students each round)
+- **Savings Rate (s)**: Chosen explicitly by students, no fixed default (initial suggested default at 10%)
+- **Exchange Rate (e)**: Determined by students' choice each round:
+  - Undervalue: 20% lower than the market baseline
+  - Market-Based: Baseline market exchange rate
+  - Overvalue: 20% higher than the market baseline
+
+### Model Equations (Explicitly Defined)
+- **Production**: \(Y(t) = A(t) \times K(t)^\alpha \times (L(t) \times H(t))^{(1-\alpha)}\)
+- **Capital Accumulation**: \(K(t+1) = (1 - \delta) \times K(t) + s \times Y(t) + NX(t)\)
+- **Labor Force Growth**: \(L(t+1) = L(t) \times (1+n)\)
+- **Human Capital Growth**: \(H(t+1) = H(t) \times (1+\eta)\)
+- **Productivity Growth**: \(A(t+1) = A(t) \times (1 + g + \theta \times openness\_ratio + \phi \times fdi\_ratio)\)
+- **Net Exports**: \(NX(t) = \beta \times (domestic\_interest\_rate - foreign\_interest\_rate)\)
+
+### Explicit Parameters
+- \(\alpha = 0.3\)
+- \(\delta = 0.1\)
+- \(g = 0.005\)
+- \(\theta = 0.1453\)
+- \(\phi = 0.1\)
+- \(\beta = -90\)
+- \(n = 0.00717\)
+- \(\eta = 0.02\)
+
+### Explicit Exogenous Variables
+- Foreign income growth: 3% per year.
+- Domestic interest rate: 4% annually.
+- Foreign interest rate: 8% annually.
+- Openness ratio: starts at 0.1 and increases gradually.
+- FDI ratio (post-1990): 0.02.
+
+## Step-by-Step Computation (Explicitly Detailed)
+- Each Round:
+  1. Input current GDP, capital stock, labor force, human capital, and productivity values.
+  2. Apply student-selected savings rate and exchange rate explicitly.
+  3. Compute GDP explicitly using the production equation.
+  4. Update capital stock explicitly with capital accumulation equation.
+  5. Update labor force explicitly.
+  6. Update human capital explicitly.
+  7. Update productivity explicitly.
+  8. Compute net exports explicitly.
+
+## Prize Determination (Explicit Criteria)
+- **Highest GDP Growth**: Highest GDP value in the final round.
+- **Highest Net Exports**: Highest Net Export value in the final round.
+- **Best Balanced Economy**: Highest combined GDP and consumption in the final round.
+
+This specification provides thorough and explicit details designed to facilitate seamless implementation by any developer or system operator.
 
