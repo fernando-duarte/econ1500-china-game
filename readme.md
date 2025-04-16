@@ -13,11 +13,26 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Clear and intuitive UI/UX design suitable for classroom settings
 
 ## Tech Stack
-- **Frontend**: React.js with Material UI for responsive, intuitive interface
-- **Backend**: Node.js and Express.js for real-time data handling
-- **Real-time communication**: WebSockets (Socket.IO)
-- **Economic model computations**: Python (FastAPI) microservice
-- **Deployment**: Docker containers hosted on cloud (AWS/GCP/Azure)
+
+### Frontend
+- React.js: 18.2.0
+- Material UI (MUI): 5.15.14
+- Chart.js: 4.4.3
+
+### Backend
+- Node.js: 20.11.1
+- Express.js: 4.19.2
+- WebSockets (Socket.IO): 4.7.5
+
+### Economic Model Computations
+- Python: 3.12.2
+- FastAPI: 0.110.0
+- NumPy: 1.26.4
+- Pandas: 2.2.2
+
+### Deployment
+- Docker: 26.1.4
+- AWS/GCP/Azure (Flexible)
 
 ## Development Milestones
 
@@ -30,6 +45,7 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Develop Python microservice with explicit economic model computations
 - Validate economic calculations through unit tests
 - Ensure microservice integration with backend via API endpoints
+- Base on files in Python Solow Model folder, solow_model.py and solow_model_run.py
 
 ### Milestone 3: Frontend and UI Design
 - Implement interactive decision controls (savings rate slider, exchange rate buttons)
@@ -47,4 +63,3 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Perform comprehensive end-to-end testing
 - Execute a mock classroom run-through with a smaller test group
 - Gather feedback and make necessary adjustments for stability and usability
-
