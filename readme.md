@@ -32,7 +32,7 @@ An interactive economic simulation game designed for undergraduate economics cou
 
 ### Deployment
 - Docker: 26.1.4
-- AWS/GCP/Azure (Flexible)
+- AWS EC2 (Recommended)
 
 ## Development Milestones
 
@@ -45,7 +45,6 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Develop Python microservice with explicit economic model computations
 - Validate economic calculations through unit tests
 - Ensure microservice integration with backend via API endpoints
-- Base on files in Python Solow Model folder, solow_model.py and solow_model_run.py
 
 ### Milestone 3: Frontend and UI Design
 - Implement interactive decision controls (savings rate slider, exchange rate buttons)
@@ -59,7 +58,12 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Conduct load testing for simultaneous connections (up to 100)
 
 ### Milestone 5: Deployment and Testing
-- Deploy integrated application to cloud environment
+- Deploy integrated application to AWS EC2
+  - Configure EC2 instance (t3.medium, Ubuntu Server 22.04 LTS)
+  - Install Docker and Docker Compose
+  - Clone repository, build and run Docker containers
+  - Optional: Domain registration and SSL certification (Let's Encrypt)
 - Perform comprehensive end-to-end testing
 - Execute a mock classroom run-through with a smaller test group
 - Gather feedback and make necessary adjustments for stability and usability
+
