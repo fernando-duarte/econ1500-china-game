@@ -2,7 +2,13 @@
 
 import numpy as np
 import pandas as pd
-from solow_utils import E_1980, Y_STAR_1980
+from solow_utils import (
+    E_1980, Y_STAR_1980,
+    calculate_exchange_rate,
+    calculate_foreign_income,
+    calculate_openness_ratio,
+    calculate_fdi_ratio
+)
 
 def solve_solow_model(initial_year, initial_conditions, parameters, years, historical_data=None):
     """
@@ -44,11 +50,10 @@ def solve_solow_model(initial_year, initial_conditions, parameters, years, histo
     # Simulation loop
     for t in range(T-1):  # Calculate state for t+1 based on t
         # Calculate time-dependent variables for NX
-        round_index = t  # 0-based index for the period
-        e_market_t = E_1980 + (7.0 - E_1980) * round_index / (T - 1)  # Linear interpolation for market rate
-        Y_star_t = Y_STAR_1980 * (1.03**(5 * round_index))
-        # Assume 'market' policy for the full simulation run
-        e_t = e_market_t
+        year = years[t]
+        # Use utility functions instead of duplicating calculation logic
+        e_t = calculate_exchange_rate(year, 'market')  # For full sim, use market rate policy
+        Y_star_t = calculate_foreign_income(year)
 
         # Production (Calculate Y[t] needed for NX[t])
         K_t_safe = max(0, K[t])
@@ -76,20 +81,21 @@ def solve_solow_model(initial_year, initial_conditions, parameters, years, histo
         L[t+1] = L[t] * (1 + n)
         H[t+1] = H[t] * (1 + eta)
 
-        # Productivity update - Use exogenous openness_ratio
-        openness_ratio = 0.1 + 0.02 * t
-        fdi_ratio = 0.02 if years[t] >= 1990 else 0
+        # Productivity update - Use openness_ratio from utility function
+        round_index = t  # 0-based index for the period
+        openness_ratio = calculate_openness_ratio(round_index)
+        fdi_ratio = calculate_fdi_ratio(year)
         A[t+1] = A[t] * (1 + g + theta*openness_ratio + phi*fdi_ratio)
 
     # Final year calculations (t = T-1)
     t = T - 1
-    round_index = t
-    e_market_t = E_1980 + (7.0 - E_1980) * round_index / (T - 1)
-    Y_star_t = Y_STAR_1980 * (1.03**(5 * round_index))
-    e_t = e_market_t
+    year = years[t]
+    # Use utility functions for final year too
+    e_t = calculate_exchange_rate(year, 'market')
+    Y_star_t = calculate_foreign_income(year)
 
     K_t_safe = max(0, K[t])
-    Y[t] = A[t] * K_t_safe**alpha * (L[t]*H[t])**(1-alpha)
+    Y[t] = A[t] * (K_t_safe**alpha) * ((L[t]*H[t])**(1-alpha))
     Y[t] = max(0, Y[t])
 
     Y_t_safe = max(Y[t], 1e-6)
