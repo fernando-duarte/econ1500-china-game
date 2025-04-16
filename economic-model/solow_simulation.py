@@ -3,11 +3,17 @@
 import numpy as np
 import pandas as pd
 from solow_utils import (
-    E_1980, Y_STAR_1980,
     calculate_exchange_rate,
     calculate_foreign_income,
     calculate_openness_ratio,
     calculate_fdi_ratio
+)
+from solow_core import (
+    initialize_simulation, 
+    simulate_solow_step,
+    calculate_production,
+    calculate_net_exports,
+    E_1980, Y_STAR_1980
 )
 
 def solve_solow_model(initial_year, initial_conditions, parameters, years, historical_data=None):
@@ -28,85 +34,60 @@ def solve_solow_model(initial_year, initial_conditions, parameters, years, histo
     Returns:
     - DataFrame containing simulated values.
     """
-    # Unpack Solow parameters
-    alpha, delta, g, theta, phi, n, eta, s = [parameters[k] for k in ['alpha', 'delta', 'g', 'theta', 'phi', 'n', 'eta', 's']]
-    # Unpack NX parameters
-    X0, M0, epsilon_x, epsilon_m, mu_x, mu_m, Y_1980 = [parameters[k] for k in ['X0', 'M0', 'epsilon_x', 'epsilon_m', 'mu_x', 'mu_m', 'Y_1980']]
-
+    # Unpack Solow parameters (only needed for params validation and final year)
+    alpha = parameters['alpha']
+    s = parameters['s']
+    Y_1980 = parameters.get('Y_1980', initial_conditions['Y'])
+    
+    # Prepare simulation
     T = len(years)
-
+    
     # Initialize arrays
-    Y, K, L, H, A, NX = [np.zeros(T) for _ in range(6)]
-    C, I = [np.zeros(T) for _ in range(2)]  # Added Consumption and Investment tracking
-
-    # Set initial conditions
-    Y[0] = initial_conditions['Y']
-    K[0] = initial_conditions['K']
-    L[0] = initial_conditions['L']
-    H[0] = initial_conditions['H']
-    A[0] = initial_conditions['A']
-    # NX[0] calculated below for t=0
-
+    Y, K, L, H, A, NX = initialize_simulation(initial_conditions, T)
+    C = np.zeros(T)
+    I = np.zeros(T)
+    
+    # Store exchange rates and foreign income for consistent calculations
+    exchange_rates = [calculate_exchange_rate(years[t], 'market') for t in range(T)]
+    foreign_incomes = [calculate_foreign_income(years[t]) for t in range(T)]
+    
     # Simulation loop
-    for t in range(T-1):  # Calculate state for t+1 based on t
-        # Calculate time-dependent variables for NX
+    for t in range(T-1):
         year = years[t]
-        # Use utility functions instead of duplicating calculation logic
-        e_t = calculate_exchange_rate(year, 'market')  # For full sim, use market rate policy
-        Y_star_t = calculate_foreign_income(year)
-
-        # Production (Calculate Y[t] needed for NX[t])
-        K_t_safe = max(0, K[t])
-        Y[t] = A[t] * (K_t_safe**alpha) * ((L[t]*H[t])**(1-alpha))
-        Y[t] = max(0, Y[t])
-
-        # Compute Net Exports using the new formula
-        # Ensure Y[t] and Y_1980 are non-zero before division
-        Y_t_safe = max(Y[t], 1e-6)  # Avoid division by zero
-        Y_1980_safe = max(Y_1980, 1e-6)
-
-        exports_term = X0 * (e_t / E_1980)**epsilon_x * (Y_star_t / Y_STAR_1980)**mu_x
-        imports_term = M0 * (e_t / E_1980)**(-epsilon_m) * (Y_t_safe / Y_1980_safe)**mu_m
-        NX[t] = exports_term - imports_term
-
-        # Consumption and Investment
+        openness_ratio = calculate_openness_ratio(t)
+        fdi_ratio = calculate_fdi_ratio(year)
+        
+        # Run simulation step
+        Y, K, L, H, A, NX = simulate_solow_step(
+            t, Y, K, L, H, A, NX, parameters, 
+            exchange_rates, foreign_incomes, 
+            openness_ratio, fdi_ratio
+        )
+        
+        # Calculate consumption and investment
         C[t] = (1 - s) * Y[t]
         I[t] = s * Y[t] + NX[t]
-        if I[t] + (1-delta)*K[t] < 0: I[t] = -(1-delta)*K[t]  # Prevent negative capital next period
-
-        # Capital accumulation
-        K[t+1] = (1 - delta)*K_t_safe + I[t]
-
-        # Labor force and human capital updates
-        L[t+1] = L[t] * (1 + n)
-        H[t+1] = H[t] * (1 + eta)
-
-        # Productivity update - Use openness_ratio from utility function
-        round_index = t  # 0-based index for the period
-        openness_ratio = calculate_openness_ratio(round_index)
-        fdi_ratio = calculate_fdi_ratio(year)
-        A[t+1] = A[t] * (1 + g + theta*openness_ratio + phi*fdi_ratio)
-
+    
     # Final year calculations (t = T-1)
     t = T - 1
     year = years[t]
-    # Use utility functions for final year too
-    e_t = calculate_exchange_rate(year, 'market')
-    Y_star_t = calculate_foreign_income(year)
-
-    K_t_safe = max(0, K[t])
-    Y[t] = A[t] * (K_t_safe**alpha) * ((L[t]*H[t])**(1-alpha))
-    Y[t] = max(0, Y[t])
-
-    Y_t_safe = max(Y[t], 1e-6)
-    Y_1980_safe = max(Y_1980, 1e-6)
-    exports_term = X0 * (e_t / E_1980)**epsilon_x * (Y_star_t / Y_STAR_1980)**mu_x
-    imports_term = M0 * (e_t / E_1980)**(-epsilon_m) * (Y_t_safe / Y_1980_safe)**mu_m
-    NX[t] = exports_term - imports_term
-
+    
+    # Calculate production for the final year
+    Y[t] = calculate_production(A[t], K[t], L[t], H[t], alpha)
+    
+    # Calculate net exports for the final year
+    NX[t] = calculate_net_exports(
+        Y[t], Y[0], exchange_rates[t], exchange_rates[0],
+        foreign_incomes[t], foreign_incomes[0],
+        parameters['X0'], parameters['M0'], 
+        parameters['epsilon_x'], parameters['epsilon_m'],
+        parameters['mu_x'], parameters['mu_m']
+    )
+    
+    # Final consumption and investment
     C[t] = (1 - s) * Y[t]
     I[t] = s * Y[t] + NX[t]
-
+    
     # Create DataFrame
     results_df = pd.DataFrame({
         'Year': years,
@@ -119,5 +100,5 @@ def solve_solow_model(initial_year, initial_conditions, parameters, years, histo
         'Consumption': C,
         'Investment': I
     })
-
+    
     return results_df 

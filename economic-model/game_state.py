@@ -5,10 +5,15 @@ import traceback
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from solow_model import calculate_next_round
-from team_management import TeamManager
+from team_management import TeamManager, DEFAULT_SAVINGS_RATE, DEFAULT_EXCHANGE_RATE_POLICY
 from events_manager import EventsManager
 from rankings_manager import RankingsManager
 from visualization_manager import VisualizationManager
+from solow_core import (
+    get_default_parameters,
+    calculate_openness_ratio,
+    calculate_fdi_ratio
+)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -35,23 +40,8 @@ class GameState:
         self.rankings_manager = RankingsManager()
         self.visualization_manager = VisualizationManager()
         
-        # Define fixed model parameters based on specs.md
-        self.model_parameters = {
-            'alpha': 0.3,
-            'delta': 0.1,
-            'g': 0.005,
-            'theta': 0.1453,
-            'phi': 0.1,
-            'n': 0.00717,
-            'eta': 0.02,
-            'X0': 18.1,
-            'M0': 14.5,
-            'epsilon_x': 1.5,
-            'epsilon_m': 1.2,
-            'mu_x': 1.0,
-            'mu_m': 1.0,
-            'Y_1980': 1000.0 # Placeholder - Should match initial Y used in TeamManager
-        }
+        # Get default model parameters from the centralized utility function
+        self.model_parameters = get_default_parameters()
     
     def create_team(self, team_name: Optional[str] = None) -> Dict[str, Any]:
         """Create a new team with initial state."""
@@ -80,6 +70,136 @@ class GameState:
         game_state = self.get_game_state()
         return game_state
     
+    def _get_parameters_for_round(self, round_index: int) -> Dict[str, Any]:
+        """
+        Helper method to get parameters for the given round.
+        Extracts common parameter preparation logic.
+        """
+        # Calculate openness ratio for the current round using the utility function
+        current_openness_ratio = calculate_openness_ratio(round_index)
+        
+        # Prepare parameters for this specific round, including the calculated openness ratio
+        params_for_round = self.model_parameters.copy()
+        params_for_round['openness_ratio'] = current_openness_ratio
+        
+        return params_for_round
+    
+    def _get_default_decision(self) -> Dict[str, Any]:
+        """
+        Helper method to get default decision when none is provided.
+        Uses shared constants from TeamManager for consistency.
+        """
+        return {
+            'savings_rate': DEFAULT_SAVINGS_RATE,
+            'exchange_rate_policy': DEFAULT_EXCHANGE_RATE_POLICY
+        }
+    
+    def _apply_event_effects(self, round_results: Dict[str, Any], events: List[Dict[str, Any]], team_id: str) -> Dict[str, Any]:
+        """
+        Helper method to apply event effects to round results.
+        Returns the modified round_results and a list of applied event names.
+        """
+        applied_event_names = []
+        
+        if not events:
+            return round_results, applied_event_names
+            
+        for event in events:
+            event_name = event.get('name', 'Unknown Event')
+            event_year = event.get('year', None)
+            effects = event.get('effects', {})
+            applied_event_names.append(event_name)
+            logger.info(f"Applying effects for event: {event_name} ({event_year}) to team {team_id}")
+
+            # Apply TFP bonus (WTO)
+            if 'tfp_increase' in effects:
+                tfp_bonus = effects['tfp_increase']
+                round_results['A_next'] *= (1 + tfp_bonus)
+                logger.debug(f"  Applied TFP bonus: {tfp_bonus}. New A_next: {round_results['A_next']}")
+
+            # Apply GDP growth delta (GFC, COVID)
+            if 'gdp_growth_delta' in effects:
+                gdp_delta = effects['gdp_growth_delta']
+                round_results['Y_t'] *= (1 + gdp_delta)
+                logger.debug(f"  Applied GDP delta: {gdp_delta}. New Y_t: {round_results['Y_t']}")
+                
+        return round_results, applied_event_names
+    
+    def _process_team_round(self, team_id: str, team: Dict[str, Any], current_events: List[Dict[str, Any]]) -> None:
+        """
+        Process a single team's state for the current round.
+        Extracts team processing logic from advance_round.
+        """
+        if team["eliminated"]:
+            return
+            
+        logger.debug(f"Processing team {team_id}: {team['team_name']}")
+        
+        # Get the latest decision for this team
+        # Decisions are submitted for the round *before* it is processed
+        decision_round = self.current_round - 1
+        latest_decision = self.team_manager.get_latest_decision(team_id, decision_round)
+        if not latest_decision:
+            logger.warning(f"No decision found for team {team_id} for round {decision_round}. Using default.")
+            latest_decision = self._get_default_decision()
+
+        logger.debug(f"Decision for round {decision_round}: {latest_decision}")
+
+        # Prepare parameters for this round
+        current_round_index = self.current_round - 1
+        params_for_round = self._get_parameters_for_round(current_round_index)
+
+        # Prepare current state for calculation
+        current_state_for_calc = {
+            'Y': team['current_state']['GDP'],
+            'K': team['current_state']['Capital'],
+            'L': team['current_state']['Labor Force'],
+            'H': team['current_state']['Human Capital'],
+            'A': team['current_state']['Productivity (TFP)']
+        }
+        
+        # Prepare student inputs
+        student_inputs_for_calc = {
+            's': latest_decision['savings_rate'],
+            'e_policy': latest_decision['exchange_rate_policy']
+        }
+
+        logger.debug(f"Calling calculate_next_round with state: {current_state_for_calc}, inputs: {student_inputs_for_calc}, year: {self.current_year}")
+
+        # Calculate next round
+        round_results = calculate_next_round(
+            current_state=current_state_for_calc,
+            parameters=params_for_round,
+            student_inputs=student_inputs_for_calc,
+            year=self.current_year
+        )
+
+        logger.debug(f"Results from calculate_next_round: {round_results}")
+
+        # Apply event effects
+        round_results, applied_event_names = self._apply_event_effects(round_results, current_events, team_id)
+
+        # Prepare the full state dictionary for the next round
+        next_state_data = {
+            'Year': self.current_year + 5, # State is for the *start* of the next year block
+            'Round': self.current_round,
+            'GDP': round_results['Y_t'], # GDP achieved in the round just ended
+            'Capital': round_results['K_next'],
+            'Labor Force': round_results['L_next'],
+            'Human Capital': round_results['H_next'],
+            'Productivity (TFP)': round_results['A_next'],
+            'Net Exports': round_results['NX_t'],
+            'Consumption': round_results['C_t'],
+            'Investment': round_results['I_t'],
+            'Savings Rate Decision': latest_decision['savings_rate'],
+            'Exchange Rate Decision': latest_decision['exchange_rate_policy']
+        }
+
+        logger.debug(f"Updating team {team_id} with next state: {next_state_data}")
+
+        # Update team state
+        self.team_manager.update_team_state(team_id, next_state_data, self.current_year, self.current_round)
+    
     def advance_round(self) -> Dict[str, Any]:
         """Advance to the next round, simulating economic changes based on decisions."""
         if not self.game_started:
@@ -96,106 +216,14 @@ class GameState:
             
             logger.debug(f"Advancing to round {self.current_round}, year {self.current_year}")
             
-            # Get events for this round - directly use events_manager
+            # Get events for this round
             current_events = self.events_manager.get_current_events(self.current_year)
             logger.debug(f"Current events: {current_events}")
             
             # Process each team's state based on their decisions
             for team_id, team in self.team_manager.teams.items():
                 try:
-                    if team["eliminated"]:
-                        continue
-                        
-                    logger.debug(f"Processing team {team_id}: {team['team_name']}")
-                    
-                    # Get the latest decision for this team - use round index for simulation
-                    # Decisions are submitted for the round *before* it is processed
-                    decision_round = self.current_round - 1
-                    latest_decision = self.team_manager.get_latest_decision(team_id, decision_round)
-                    if not latest_decision:
-                        logger.warning(f"No decision found for team {team_id} for round {decision_round}. Using default or previous?")
-                        # Handle missing decision - maybe use default s=0.10?
-                        # For now, let's assume a default savings rate if none submitted.
-                        latest_decision = {'savings_rate': 0.10, 'exchange_rate_policy': 'market'} # Placeholder default
-
-                    logger.debug(f"Decision for round {decision_round}: {latest_decision}")
-
-                    # Prepare inputs for calculate_next_round
-                    # Calculate openness ratio for the current round being processed
-                    current_round_index = self.current_round - 1
-                    current_openness_ratio = 0.1 + 0.02 * current_round_index
-
-                    # Prepare parameters for this specific round, including the calculated openness ratio
-                    params_for_round = self.model_parameters.copy()
-                    params_for_round['openness_ratio'] = current_openness_ratio
-
-                    current_state_for_calc = {
-                        'Y': team['current_state']['GDP'], # Need Y from the start of the round
-                        'K': team['current_state']['Capital'],
-                        'L': team['current_state']['Labor Force'],
-                        'H': team['current_state']['Human Capital'],
-                        'A': team['current_state']['Productivity (TFP)']
-                    }
-                    student_inputs_for_calc = {
-                        's': latest_decision['savings_rate'],
-                        'e_policy': latest_decision['exchange_rate_policy'] # Pass policy to model
-                    }
-
-                    logger.debug(f"Calling calculate_next_round with state: {current_state_for_calc}, inputs: {student_inputs_for_calc}, year: {self.current_year}")
-
-                    # Use the new calculate_next_round function
-                    round_results = calculate_next_round(
-                        current_state=current_state_for_calc,
-                        parameters=params_for_round, # Pass round-specific params
-                        student_inputs=student_inputs_for_calc,
-                        year=self.current_year # Pass the actual year for event checking etc.
-                    )
-
-                    logger.debug(f"Results from calculate_next_round: {round_results}")
-
-                    # --- Apply Events --- #
-                    # Check for events occurring in the year *being calculated* (self.current_year)
-                    applied_event_names = []
-                    if current_events: # Check if list is not empty
-                        for event in current_events:
-                            event_name = event.get('name', 'Unknown Event')
-                            event_year = event.get('year', None)
-                            effects = event.get('effects', {})
-                            applied_event_names.append(event_name)
-                            logger.info(f"Applying effects for event: {event_name} ({event_year}) to team {team_id}")
-
-                            # Apply TFP bonus (WTO)
-                            if 'tfp_increase' in effects:
-                                tfp_bonus = effects['tfp_increase']
-                                round_results['A_next'] *= (1 + tfp_bonus)
-                                logger.debug(f"  Applied TFP bonus: {tfp_bonus}. New A_next: {round_results['A_next']}")
-
-                            # Apply GDP growth delta (GFC, COVID)
-                            if 'gdp_growth_delta' in effects:
-                                gdp_delta = effects['gdp_growth_delta']
-                                round_results['Y_t'] *= (1 + gdp_delta)
-                                logger.debug(f"  Applied GDP delta: {gdp_delta}. New Y_t: {round_results['Y_t']}")
-
-                    # Prepare the full state dictionary for the *next* round
-                    next_state_data = {
-                        'Year': self.current_year + 5, # State is for the *start* of the next year block
-                        'Round': self.current_round,
-                        'GDP': round_results['Y_t'], # GDP achieved in the round just ended
-                        'Capital': round_results['K_next'],
-                        'Labor Force': round_results['L_next'],
-                        'Human Capital': round_results['H_next'],
-                        'Productivity (TFP)': round_results['A_next'],
-                        'Net Exports': round_results['NX_t'],
-                        'Consumption': round_results['C_t'],
-                        'Investment': round_results['I_t'],
-                        'Savings Rate Decision': latest_decision['savings_rate'],
-                        'Exchange Rate Decision': latest_decision['exchange_rate_policy']
-                    }
-
-                    logger.debug(f"Updating team {team_id} with next state: {next_state_data}")
-
-                    # Update team state using the TeamManager
-                    self.team_manager.update_team_state(team_id, next_state_data, self.current_year, self.current_round)
+                    self._process_team_round(team_id, team, current_events)
                 except Exception as e:
                     logger.error(f"Error processing team {team_id}: {str(e)}")
                     logger.error(traceback.format_exc())

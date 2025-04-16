@@ -14,6 +14,10 @@ ECONOMIC_NOUNS = [
     "Traders", "Planners", "Entrepreneurs", "Visionaries", "Markets"
 ]
 
+# Default decision values for consistency across the codebase
+DEFAULT_SAVINGS_RATE = 0.2  # 20%
+DEFAULT_EXCHANGE_RATE_POLICY = "market"
+
 class TeamManager:
     """
     Manages team creation, decision submission, and team state.
@@ -49,7 +53,7 @@ class TeamManager:
             "H": 1.0,    # Human Capital
             "A": 1.0,    # Productivity (TFP)
             "NX": 3.6,   # Net Exports
-            "C": 306.2 * 0.8,  # Consumption (assuming default savings rate of 20%)
+            "C": 306.2 * (1 - DEFAULT_SAVINGS_RATE),  # Consumption (using default savings rate)
             "initial_Y": 306.2  # Keep track of initial GDP for imports calculation
         }
         
@@ -64,8 +68,8 @@ class TeamManager:
                 {
                     "round": 0,
                     "year": 1980,
-                    "savings_rate": 0.2,  # Default 20%
-                    "exchange_rate_policy": "market"  # Default market-based
+                    "savings_rate": DEFAULT_SAVINGS_RATE,
+                    "exchange_rate_policy": DEFAULT_EXCHANGE_RATE_POLICY
                 }
             ],
             "eliminated": False
@@ -144,6 +148,6 @@ class TeamManager:
         except StopIteration:
             # If no decision was made, use default values
             return {
-                "savings_rate": 0.2,
-                "exchange_rate_policy": "market"
+                "savings_rate": DEFAULT_SAVINGS_RATE,
+                "exchange_rate_policy": DEFAULT_EXCHANGE_RATE_POLICY
             } 
