@@ -12,3 +12,6 @@ __pycache__/
 *$py.class
 *.so
 .Python 
+
+# Don't track third-party UI frameworks
+material-dashboard-react-main/ 
