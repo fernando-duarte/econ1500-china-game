@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { emit, on, off } from '../api/socket';
 
 /**
  * DecisionContext provides submitDecision, submitting, error, confirmation, and reset.
@@ -7,21 +8,37 @@ export const DecisionContext = createContext();
 
 /**
  * DecisionProvider wraps children and provides decision submission context.
- * Placeholder implementation for now.
+ * Submits decisions via WebSocket and listens for confirmation/error.
  */
 export const DecisionProvider = ({ children }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
 
+  useEffect(() => {
+    // Listen for decision result from server
+    const handleDecisionResult = (data) => {
+      setSubmitting(false);
+      if (data.success) {
+        setConfirmation({ success: true, message: data.message || 'Decision submitted!' });
+        setError(null);
+      } else {
+        setError(data.message || 'Submission failed');
+        setConfirmation(null);
+      }
+    };
+    on('decisionResult', handleDecisionResult);
+    return () => {
+      off('decisionResult', handleDecisionResult);
+    };
+    // eslint-disable-next-line
+  }, []);
+
   const submitDecision = async (decision) => {
     setSubmitting(true);
     setError(null);
-    // TODO: implement API/WebSocket submission
-    setTimeout(() => {
-      setConfirmation({ success: true, message: 'Decision submitted!' });
-      setSubmitting(false);
-    }, 1000);
+    setConfirmation(null);
+    emit('submitDecision', decision);
   };
 
   const reset = () => {
