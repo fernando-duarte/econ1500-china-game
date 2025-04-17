@@ -20,18 +20,19 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Chart.js: 4.4.3
 
 ### Backend
-- Node.js: 20.11.1
-- Express.js: 4.19.2
+- Node.js: 20.13.1
+- Express.js: 5.1.0
 - WebSockets (Socket.IO): 4.7.5
 
 ### Economic Model Computations
-- Python: 3.12.2
+- Python: 3.13.0
 - FastAPI: 0.110.0
 - NumPy: 1.26.4
 - Pandas: 2.2.2
 
 ### Deployment
 - Docker: 26.1.4
+- Multi-stage builds for production optimization
 - AWS EC2 (Recommended)
 
 ## Development Milestones

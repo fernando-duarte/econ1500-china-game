@@ -45,8 +45,8 @@ china-growth-game/
 ### Prerequisites
 
 - [Docker](https://www.docker.com/get-started) and Docker Compose
-- [Node.js](https://nodejs.org/) v20.11.1 or higher
-- [Python](https://www.python.org/) v3.12.2 or higher
+- [Node.js](https://nodejs.org/) v20.13.1
+- [Python](https://www.python.org/) v3.13.0
 
 ### Installation
 

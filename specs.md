@@ -6,6 +6,24 @@
 - **Participants**: 80 undergraduates divided into 10 teams (8 students per team)
 - **Timeframe**: 1980–2025 (10 rounds, each representing 5 years: 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025)
 
+## Technology Requirements
+- **Frontend:** 
+  - React.js 18.2.0
+  - Material UI (MUI) 5.15.14
+  - Chart.js 4.4.3
+- **Backend:** 
+  - Node.js 20.13.1
+  - Express.js 5.1.0
+  - Socket.IO 4.7.5
+- **Economic Model:** 
+  - Python 3.13.0
+  - FastAPI 0.110.0
+  - NumPy 1.26.4
+  - Pandas 2.2.2
+- **Deployment:** 
+  - Docker 26.1.4
+  - Production Docker configuration with multi-stage builds
+
 ## Game Flow and Timing
 ### Group Formation (3 minutes)
 - Students form groups by proximity.

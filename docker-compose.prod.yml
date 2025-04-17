@@ -1,0 +1,61 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: solow-game-frontend:prod
+    ports:
+      - "80:80"
+    depends_on:
+      - model
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:80", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - solow-network
+
+  model:
+    build:
+      context: ./model
+      dockerfile: Dockerfile.prod
+    image: solow-game-model:prod
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - solow-network
+
+networks:
+  solow-network:
+    driver: bridge
+
+volumes:
+  frontend_node_modules:
+    name: china-growth-game-frontend-modules-prod
+  backend_node_modules:
+    name: china-growth-game-backend-modules-prod
+  model_python_deps:
+    name: china-growth-game-model-deps-prod
+  model_data:
+    name: solow_game_model_data_prod
+    driver: local 
