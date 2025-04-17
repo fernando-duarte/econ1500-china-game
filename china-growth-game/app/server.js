@@ -28,9 +28,8 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes
+// API routes
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
@@ -48,6 +47,19 @@ app.get('/api/economic-model/health', async (req, res) => {
 app.use('/api/game', gameRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/results', resultsRoutes);
+
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../build')));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  });
+} else {
+  // In development, serve the public directory
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
