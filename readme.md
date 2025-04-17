@@ -11,6 +11,7 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Real-time synchronization between student devices and professor dashboard
 - Stable Wi-Fi connectivity for up to 80 concurrent users
 - Clear and intuitive UI/UX design suitable for classroom settings
+- Python 3.12 for economic model compatibility
 
 ## Tech Stack
 
@@ -25,7 +26,7 @@ An interactive economic simulation game designed for undergraduate economics cou
 - WebSockets (Socket.IO): 4.7.5
 
 ### Economic Model Computations
-- Python: 3.13.0
+- Python: 3.12.10 (required for economic model compatibility)
 - FastAPI: 0.110.0
 - NumPy: 1.26.4
 - Pandas: 2.2.2

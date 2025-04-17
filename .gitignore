@@ -25,3 +25,5 @@ material-dashboard-react-main/
 # Temporary docker build artifacts that shouldn't be tracked
 .docker/
 docker-compose.override.yml 
+
+venv-py312/ 
