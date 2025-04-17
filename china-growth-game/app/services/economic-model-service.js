@@ -13,7 +13,7 @@ class EconomicModelService {
 
   async healthCheck() {
     try {
-      const response = await this.client.get('/');
+      const response = await this.client.get('/health');
       return response.data;
     } catch (error) {
       console.error('Economic model health check failed:', error.message);

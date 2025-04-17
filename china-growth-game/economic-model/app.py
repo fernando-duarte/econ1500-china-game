@@ -76,6 +76,11 @@ class GameStateResponse(BaseModel):
 def read_root():
     return {"message": "China's Growth Game Economic Model API"}
 
+@app.get("/health")
+def health_check():
+    """Health check endpoint for container health monitoring."""
+    return {"status": "ok", "message": "Economic model service is running"}
+
 # Game flow endpoints
 @app.post("/game/init", response_model=GameStateResponse)
 def initialize_game():

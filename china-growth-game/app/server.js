@@ -34,7 +34,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// API routes
+// Health check endpoints
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
