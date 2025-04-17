@@ -35,10 +35,10 @@ Coded by www.creative-tim.com
 */
 
 // Material Dashboard 2 React layouts
-import Dashboard from "layouts/dashboard";
+import Dashboard from "./layouts/dashboard";
 
 // Custom China Growth Game components
-import GameDashboard from "layouts/game";
+import GameDashboard from "./layouts/game";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
