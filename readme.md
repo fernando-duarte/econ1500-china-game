@@ -55,7 +55,7 @@ An interactive economic simulation game designed for undergraduate economics cou
 ### Milestone 4: Real-time Interactivity
 - Set up WebSocket integration for real-time game state synchronization
 - Develop Professor Dashboard with real-time ranking and controls for game flow
-- Conduct load testing for simultaneous connections (up to 100)
+- Conduct load testing for simultaneous connections (up to 100) **[Implemented, see `load-testing/`]**
 
 ### Milestone 5: Deployment and Testing
 - Deploy integrated application to AWS EC2
@@ -66,4 +66,8 @@ An interactive economic simulation game designed for undergraduate economics cou
 - Perform comprehensive end-to-end testing
 - Execute a mock classroom run-through with a smaller test group
 - Gather feedback and make necessary adjustments for stability and usability
+
+## Load Testing
+
+A load testing script and instructions are provided in the `load-testing/` directory. This allows you to simulate up to 100 users making HTTP and WebSocket requests to the backend, verifying real-time interactivity and server robustness. See `load-testing/README.md` for details on running and customizing the test.
 

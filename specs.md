@@ -107,6 +107,7 @@ Results Visualizations:
 - Charts tracking overall class performance
 - Controls explicitly provided to start subsequent rounds
 - Capability to pause or restart the timer
+- **Load testing for up to 100 simultaneous connections implemented. See `load-testing/` for details.**
 
 ## Technical Setup
 - Students must connect to provided Wi-Fi.
