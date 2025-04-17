@@ -1,0 +1,4 @@
+# CODEOWNERS for ECON1500 China Growth Game
+/backend/ @backend-owner
+/frontend/ @frontend-owner
+/china-growth-game/economic-model/ @model-owner 
