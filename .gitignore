@@ -1,5 +1,5 @@
 .DS_Store 
-Python Solow Model/ %
+Python Solow Model/
 
 # Python Virtual Environments
 venv/
@@ -20,4 +20,8 @@ __pycache__/
 *.swp
 
 # Don't track third-party UI frameworks
-material-dashboard-react-main/ 
+material-dashboard-react-main/
+
+# Temporary docker build artifacts that shouldn't be tracked
+.docker/
+docker-compose.override.yml 
