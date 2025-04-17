@@ -20,4 +20,4 @@ __pycache__/
 *.swp
 
 # Don't track third-party UI frameworks
-material-dashboard-react-main/ % 
+material-dashboard-react-main/ 
