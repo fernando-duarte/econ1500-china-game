@@ -1,2 +1,14 @@
 .DS_Store 
-Python Solow Model/ 
+Python Solow Model/ %
+
+# Python Virtual Environments
+venv/
+env/
+.env/
+.venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python 
