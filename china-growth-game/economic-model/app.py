@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
 import uvicorn
-from .game_state import GameState
+from game_state import GameState
 
 # Create a single instance of the game state to be used for all requests
 # This implements in-memory state management as requested
