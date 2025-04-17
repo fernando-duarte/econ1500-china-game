@@ -51,7 +51,11 @@ function GameDashboard() {
 
   // Connect to the server when component mounts
   useEffect(() => {
-    const newSocket = io();
+    // Use explicit URL for Socket.IO connection to avoid port confusion
+    const newSocket = io("http://localhost:3000", {
+      transports: ['websocket', 'polling'],
+      withCredentials: false
+    });
     setSocket(newSocket);
 
     // Socket event listeners

@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node app/server.js",
     "dev": "nodemon app/server.js",
-    "start:react": "react-scripts start",
+    "start:react": "PORT=3001 react-scripts start",
     "build:react": "react-scripts build",
     "dev:all": "concurrently \"npm run dev\" \"npm run start:react\"",
     "test": "echo \"Error: no test specified\" && exit 1"
