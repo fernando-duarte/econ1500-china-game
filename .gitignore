@@ -7,11 +7,17 @@ env/
 .env/
 .venv/
 ENV/
+**/venv-py*/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python 
 
+# Backup files
+*.bak
+*~
+*.swp
+
 # Don't track third-party UI frameworks
-material-dashboard-react-main/ 
+material-dashboard-react-main/ % 
