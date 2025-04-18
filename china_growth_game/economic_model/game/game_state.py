@@ -1,30 +1,46 @@
-"""
-Game state management for the China Growth Game.
-
-This module contains the GameState class, which manages the in-memory
-state for a single game session with multiple teams.
-"""
-
 import numpy as np
 import uuid
 import logging
 import traceback
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-
-# Import managers directly to avoid circular imports
-from china_growth_game.economic_model.game.team_management import TeamManager
+from china_growth_game.economic_model.core.solow_model import calculate_next_round
+from china_growth_game.economic_model.game.team_management import TeamManager, DEFAULT_SAVINGS_RATE, DEFAULT_EXCHANGE_RATE_POLICY
 from china_growth_game.economic_model.game.events_manager import EventsManager
 from china_growth_game.economic_model.game.rankings_manager import RankingsManager
 from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
-from china_growth_game.economic_model.utils.constants import (
-    DEFAULT_SAVINGS_RATE,
-    DEFAULT_EXCHANGE_RATE_POLICY
+from china_growth_game.economic_model.core.solow_core import (
+    get_default_parameters,
+    calculate_openness_ratio,
+    calculate_fdi_ratio
 )
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+def convert_numpy_values(obj):
+    """
+    Recursively convert numpy values to Python native types for JSON serialization.
+    
+    Args:
+        obj: The object to convert
+        
+    Returns:
+        The converted object with numpy types converted to Python native types
+    """
+    if isinstance(obj, dict):
+        return {key: convert_numpy_values(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_values(item) for item in obj]
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return convert_numpy_values(obj.tolist())
+    else:
+        return obj
 
 class GameState:
     """
@@ -48,22 +64,21 @@ class GameState:
         self.rankings_manager = RankingsManager()
         self.visualization_manager = VisualizationManager()
 
-        # Import here to avoid circular imports
-        from china_growth_game.economic_model.core.solow_core import get_default_parameters
-
         # Get default model parameters from the centralized utility function
         self.model_parameters = get_default_parameters()
 
     def create_team(self, team_name: Optional[str] = None) -> Dict[str, Any]:
         """Create a new team with initial state."""
-        return self.team_manager.create_team(team_name, self.current_year, self.current_round)
+        team = self.team_manager.create_team(team_name, self.current_year, self.current_round)
+        return convert_numpy_values(team)
 
     def submit_decision(self, team_id: str, savings_rate: float, exchange_rate_policy: str) -> Dict[str, Any]:
         """Submit a team's decision for the current round."""
-        return self.team_manager.submit_decision(
+        decision = self.team_manager.submit_decision(
             team_id, savings_rate, exchange_rate_policy,
             self.current_round, self.current_year
         )
+        return convert_numpy_values(decision)
 
     def start_game(self) -> Dict[str, Any]:
         """Start the game with registered teams."""
@@ -72,7 +87,7 @@ class GameState:
 
         self.game_started = True
         self.current_round = 0  # Start with round 0 (first round)
-        self.current_year = self.years[self.current_round]  # Set year to 1980
+        self.current_year = int(self.years[self.current_round])  # Set year to 1980, convert numpy.int64 to int
 
         # Archive initial state to history for all teams
         for team_id, team in self.team_manager.teams.items():
@@ -86,9 +101,6 @@ class GameState:
         Helper method to get parameters for the given round.
         Extracts common parameter preparation logic.
         """
-        # Import here to avoid circular imports
-        from china_growth_game.economic_model.core.solow_core import calculate_openness_ratio
-
         # Calculate openness ratio for the current round using the utility function
         current_openness_ratio = calculate_openness_ratio(round_index)
 
@@ -170,7 +182,7 @@ class GameState:
         current_round_index = self.current_round - 1
         params_for_round = self._get_parameters_for_round(current_round_index)
 
-        # Prepare current state for calculation - handle both GDP and Y keys
+        # Prepare current state for calculation - handle both GDP and Y keys 
         current_state = team['current_state']
         current_state_for_calc = {
             'Y': current_state.get('GDP', current_state.get('Y', 0)),  # Try GDP first, then Y as fallback
@@ -187,9 +199,6 @@ class GameState:
         }
 
         logger.debug(f"Calling calculate_next_round with state: {current_state_for_calc}, inputs: {student_inputs_for_calc}, year: {self.current_year}")
-
-        # Import here to avoid circular imports
-        from china_growth_game.economic_model.core.solow_model import calculate_next_round
 
         # Calculate next round
         round_results = calculate_next_round(
@@ -236,19 +245,19 @@ class GameState:
         # Idempotency check: if this round has already been processed, return current state
         if self.current_round in self.processed_rounds:
             logger.warning(f"Round {self.current_round} has already been processed. Skipping.")
-            return {
+            return convert_numpy_values({
                 "round": self.current_round,
                 "year": self.current_year,
                 "events": self.events_manager.get_current_events(self.current_year),
                 "rankings": self.rankings_manager.rankings
-            }
+            })
         try:
             # Store the current round for history records before incrementing
             previous_round = self.current_round
 
             # Move to next round (0-based index)
             self.current_round += 1
-            self.current_year = self.years[self.current_round]
+            self.current_year = int(self.years[self.current_round])  # Convert numpy.int64 to int
             logger.debug(f"Advancing to round {self.current_round}, year {self.current_year}")
             # Get events for this round
             current_events = self.events_manager.get_current_events(self.current_year)
@@ -266,12 +275,16 @@ class GameState:
             self.calculate_rankings()
             # Mark this round as processed
             self.processed_rounds.add(self.current_round)
-            return {
+            
+            # Convert numpy values to Python native types before returning
+            result = convert_numpy_values({
                 "round": self.current_round,
                 "year": self.current_year,
                 "events": current_events,
                 "rankings": self.rankings_manager.rankings
-            }
+            })
+            
+            return result
         except Exception as e:
             logger.error(f"Error in advance_round: {str(e)}")
             logger.error(traceback.format_exc())
@@ -279,11 +292,12 @@ class GameState:
 
     def calculate_rankings(self) -> Dict[str, List[str]]:
         """Calculate team rankings based on different metrics."""
-        return self.rankings_manager.calculate_rankings(self.team_manager.teams)
+        rankings = self.rankings_manager.calculate_rankings(self.team_manager.teams)
+        return convert_numpy_values(rankings)
 
     def get_game_state(self) -> Dict[str, Any]:
         """Get the current game state."""
-        return {
+        state = {
             "game_id": self.game_id,
             "created_at": self.created_at,
             "current_round": self.current_round,
@@ -293,12 +307,16 @@ class GameState:
             "game_started": self.game_started,
             "game_ended": self.game_ended
         }
+        # Convert any numpy values to Python native types
+        return convert_numpy_values(state)
 
     def get_team_state(self, team_id: str) -> Dict[str, Any]:
         """Get the state of a specific team."""
-        return self.team_manager.get_team_state(team_id)
+        team_state = self.team_manager.get_team_state(team_id)
+        return convert_numpy_values(team_state)
 
     def get_team_visualizations(self, team_id: str) -> Dict[str, Any]:
         """Get visualization data for a specific team."""
         team = self.team_manager.get_team_state(team_id)
-        return self.visualization_manager.get_team_visualizations(team)
+        visualizations = self.visualization_manager.get_team_visualizations(team)
+        return convert_numpy_values(visualizations) 

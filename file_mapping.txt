@@ -1,0 +1,39 @@
+# File Mapping for Refactoring
+
+# Core files
+china-growth-game/economic-model/solow_core.py -> china_growth_game/economic_model/core/solow_core.py
+china-growth-game/economic-model/solow_model.py -> china_growth_game/economic_model/core/solow_model.py
+china-growth-game/economic-model/solow_simulation.py -> china_growth_game/economic_model/core/solow_simulation.py
+
+# Game files
+china-growth-game/economic-model/game_state.py -> china_growth_game/economic_model/game/game_state.py
+china-growth-game/economic-model/team_management.py -> china_growth_game/economic_model/game/team_management.py
+china-growth-game/economic-model/events_manager.py -> china_growth_game/economic_model/game/events_manager.py
+china-growth-game/economic-model/rankings_manager.py -> china_growth_game/economic_model/game/rankings_manager.py
+
+# Utils files
+china-growth-game/economic-model/constants.py -> china_growth_game/economic_model/utils/constants.py
+china-growth-game/economic-model/replay.py -> china_growth_game/economic_model/utils/replay.py
+
+# Visualization files
+china-growth-game/economic-model/visualization_manager.py -> china_growth_game/economic_model/visualization/visualization_manager.py
+
+# App files
+china-growth-game/economic-model/app.py -> china_growth_game/economic_model/app/app.py
+
+# Test files
+china-growth-game/economic-model/test_solow_core.py -> china_growth_game/economic_model/tests/unit/core/test_solow_core.py
+china-growth-game/economic-model/test_model.py -> china_growth_game/economic_model/tests/unit/core/test_model.py
+china-growth-game/economic-model/test_game_state.py -> china_growth_game/economic_model/tests/unit/game/test_game_state.py
+china-growth-game/economic-model/test_team_management.py -> china_growth_game/economic_model/tests/unit/game/test_team_management.py
+china-growth-game/economic-model/test_events_manager.py -> china_growth_game/economic_model/tests/unit/game/test_events_manager.py
+china-growth-game/economic-model/test_rankings_manager.py -> china_growth_game/economic_model/tests/unit/game/test_rankings_manager.py
+china-growth-game/economic-model/test_constants.py -> china_growth_game/economic_model/tests/unit/utils/test_constants.py
+china-growth-game/economic-model/test_replay.py -> china_growth_game/economic_model/tests/unit/utils/test_replay.py
+china-growth-game/economic-model/test_visualization_manager.py -> china_growth_game/economic_model/tests/unit/visualization/test_visualization_manager.py
+china-growth-game/economic-model/test_app.py -> china_growth_game/economic_model/tests/unit/test_app.py
+
+# Other files
+china-growth-game/economic-model/run_tests.py -> run_tests.py (update to use the package structure)
+china-growth-game/economic-model/run_simulation.py -> run_simulation.py (update to use the package structure)
+china-growth-game/economic-model/benchmark_tests.py -> china_growth_game/economic_model/tests/benchmark/benchmark_tests.py

@@ -3,48 +3,42 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
 import uvicorn
-import logging
-import sys
+from china_growth_game.economic_model.game.game_state import GameState
 import json
-import traceback
-from game_state import GameState
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("app")
-
-# Helper function to handle numpy serialization
-def numpy_safe_encoder(obj):
-    """Convert numpy types to standard Python types for JSON serialization."""
-    if isinstance(obj, np.integer):
-        return int(obj)
-    elif isinstance(obj, np.floating):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif hasattr(obj, 'item'):
-        return obj.item()
-    return obj
-
-# Add the canonical path to facilitate imports when running from different directories
-import os
-import sys
-canonical_path = os.path.dirname(os.path.abspath(__file__))
-if canonical_path not in sys.path:
-    sys.path.append(canonical_path)
-    logger.info(f"Added canonical path to sys.path: {canonical_path}")
-
-try:
-    from solow_core import get_default_parameters
-    logger.info("Successfully imported canonical implementation")
-except ImportError as e:
-    logger.error(f"Error importing canonical implementation: {e}")
+# Custom JSON encoder to handle numpy types
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
 
 # Create a single instance of the game state to be used for all requests
 # This implements in-memory state management as requested
 game_state = GameState()
 
 app = FastAPI(title="China's Growth Game Economic Model API")
+
+# Custom JSON Response class to use our encoder
+class CustomJSONResponse(JSONResponse):
+    def render(self, content) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+            cls=NumpyEncoder,
+        ).encode("utf-8")
+
+# Use custom response class
+app.router.default_response_class = CustomJSONResponse
 
 # Pydantic models for API requests and responses
 class InitialConditions(BaseModel):
@@ -141,47 +135,30 @@ def advance_to_next_round():
     """Advance to the next round, processing all team decisions."""
     try:
         # Add more detailed logging
-        logger.info("Starting advance_to_next_round()")
-        print("Starting advance_to_next_round()", file=sys.stderr)
-        sys.stderr.flush()
+        import logging
+        logging.info("Starting advance_to_next_round()")
         
-        try:
-            result = game_state.advance_round()
-            logger.info(f"advance_round() returned: {result}")
-            print(f"advance_round() returned", file=sys.stderr)
-            sys.stderr.flush()
-        except Exception as internal_e:
-            logger.error(f"Exception in game_state.advance_round(): {str(internal_e)}")
-            print(f"Exception in game_state.advance_round(): {str(internal_e)}", file=sys.stderr)
-            tb = traceback.format_exc()
-            logger.error(f"Traceback: {tb}")
-            print(f"Traceback: {tb}", file=sys.stderr)
-            sys.stderr.flush()
-            raise
+        result = game_state.advance_round()
+        logging.info(f"advance_round() returned: {result}")
         
         # Ensure result can be serialized
+        import json
         try:
             # Test if the result can be serialized
-            json_result = json.dumps(result, default=numpy_safe_encoder)
-            logger.info("Result successfully serialized to JSON")
-            print("Result successfully serialized to JSON", file=sys.stderr)
-            sys.stderr.flush()
+            json_result = json.dumps(result)
+            logging.info("Result successfully serialized to JSON")
             return result
         except TypeError as e:
             # If serialization fails, log the error and handle it
-            logger.error(f"JSON serialization error: {str(e)}")
-            print(f"JSON serialization error: {str(e)}", file=sys.stderr)
-            sys.stderr.flush()
+            logging.error(f"JSON serialization error: {str(e)}")
             # Try to identify problematic values
             fixed_result = {}
             for key, value in result.items():
                 try:
-                    json.dumps({key: value}, default=numpy_safe_encoder)
+                    json.dumps({key: value})
                     fixed_result[key] = value
                 except TypeError:
-                    logger.error(f"Key {key} has non-serializable value: {value}")
-                    print(f"Key {key} has non-serializable value: {value}", file=sys.stderr)
-                    sys.stderr.flush()
+                    logging.error(f"Key {key} has non-serializable value: {value}")
                     # Try to convert problematic types
                     if hasattr(value, 'tolist'):  # For numpy arrays
                         fixed_result[key] = value.tolist()
@@ -192,21 +169,15 @@ def advance_to_next_round():
             return fixed_result
             
     except ValueError as e:
-        logger.error(f"ValueError in advance_to_next_round: {str(e)}")
-        print(f"ValueError in advance_to_next_round: {str(e)}", file=sys.stderr)
-        tb = traceback.format_exc()
-        logger.error(tb)
-        print(tb, file=sys.stderr)
-        sys.stderr.flush()
+        import traceback
+        logging.error(f"ValueError in advance_to_next_round: {str(e)}")
+        logging.error(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # More detailed error reporting for debugging
-        logger.error(f"Exception in advance_to_next_round: {str(e)}")
-        print(f"Exception in advance_to_next_round: {str(e)}", file=sys.stderr)
-        tb = traceback.format_exc()
-        logger.error(tb)
-        print(tb, file=sys.stderr)
-        sys.stderr.flush()
+        import traceback
+        logging.error(f"Exception in advance_to_next_round: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = {
             "error": str(e),
             "traceback": traceback.format_exc()

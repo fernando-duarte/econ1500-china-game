@@ -1,15 +1,18 @@
 import unittest
-from constants import (
+from china_growth_game.economic_model.utils.constants import (
+    DEFAULT_PARAMS,
+    DEFAULT_INITIAL_CONDITIONS,
+    DEFAULT_YEARS,
     DEFAULT_SAVINGS_RATE,
     DEFAULT_EXCHANGE_RATE_POLICY,
-    DEFAULT_INITIAL_CONDITIONS,
     EXCHANGE_RATE_POLICIES,
-    POLICY_MULTIPLIERS,
-    DEFAULT_YEARS,
     MAX_ROUNDS,
     WTO_EVENT_YEAR,
     GFC_EVENT_YEAR,
-    COVID_EVENT_YEAR
+    COVID_EVENT_YEAR,
+    E_1980,
+    Y_STAR_1980,
+    POLICY_MULTIPLIERS
 )
 
 class TestConstants(unittest.TestCase):

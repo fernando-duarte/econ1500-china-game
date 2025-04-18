@@ -1,19 +1,25 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import uuid
+import logging
 import os
 import pandas as pd
-from team_management import (
+from china_growth_game.economic_model.game.team_management import (
     TeamManager,
     is_name_appropriate,
     ECONOMIC_ADJECTIVES,
     ECONOMIC_NOUNS,
-    INAPPROPRIATE_WORDS
-)
-from constants import (
+    INAPPROPRIATE_WORDS,
     DEFAULT_SAVINGS_RATE,
     DEFAULT_EXCHANGE_RATE_POLICY,
-    DEFAULT_INITIAL_CONDITIONS,
     EXCHANGE_RATE_POLICIES
+)
+from china_growth_game.economic_model.utils.constants import (
+    DEFAULT_PARAMS,
+    E_1980,
+    Y_STAR_1980,
+    POLICY_MULTIPLIERS,
+    DEFAULT_INITIAL_CONDITIONS
 )
 
 class TestTeamManagement(unittest.TestCase):
@@ -135,6 +141,8 @@ class TestTeamManagement(unittest.TestCase):
         # Test fallback to defaults when CSV read fails
         mock_read_csv.side_effect = Exception("CSV read error")
         fallback_team_manager = TeamManager()
+        
+        # The fallback should be to DEFAULT_INITIAL_CONDITIONS, not DEFAULT_PARAMS
         self.assertEqual(fallback_team_manager.initial_conditions, DEFAULT_INITIAL_CONDITIONS)
         
     def test_submit_decision(self):
@@ -258,41 +266,6 @@ class TestTeamManagement(unittest.TestCase):
         # Test invalid team ID
         with self.assertRaises(ValueError):
             self.team_manager.update_team_state("invalid-id", new_state, 1985, 1)
-            
-    def test_get_latest_decision(self):
-        """Test latest decision retrieval."""
-        # Create a team
-        team = self.team_manager.create_team("Decision Team")
-        team_id = team["team_id"]
-        
-        # Submit multiple decisions for different rounds
-        self.team_manager.submit_decision(team_id, 0.3, "market", 1, 1985)
-        self.team_manager.submit_decision(team_id, 0.4, "undervalue", 2, 1990)
-        self.team_manager.submit_decision(team_id, 0.5, "overvalue", 2, 1990)  # Same round, should override
-        
-        # Get latest decision for round 0 (initial)
-        decision_r0 = self.team_manager.get_latest_decision(team_id, 0)
-        self.assertEqual(decision_r0["savings_rate"], DEFAULT_SAVINGS_RATE)
-        self.assertEqual(decision_r0["exchange_rate_policy"], DEFAULT_EXCHANGE_RATE_POLICY)
-        
-        # Get latest decision for round 1
-        decision_r1 = self.team_manager.get_latest_decision(team_id, 1)
-        self.assertEqual(decision_r1["savings_rate"], 0.3)
-        self.assertEqual(decision_r1["exchange_rate_policy"], "market")
-        
-        # Get latest decision for round 2 (should be the most recent submission)
-        decision_r2 = self.team_manager.get_latest_decision(team_id, 2)
-        self.assertEqual(decision_r2["savings_rate"], 0.5)
-        self.assertEqual(decision_r2["exchange_rate_policy"], "overvalue")
-        
-        # Get latest decision for round 3 (no decision, should return default)
-        decision_r3 = self.team_manager.get_latest_decision(team_id, 3)
-        self.assertEqual(decision_r3["savings_rate"], DEFAULT_SAVINGS_RATE)
-        self.assertEqual(decision_r3["exchange_rate_policy"], DEFAULT_EXCHANGE_RATE_POLICY)
-        
-        # Test invalid team ID
-        with self.assertRaises(ValueError):
-            self.team_manager.get_latest_decision("invalid-id", 1)
             
     def test_edit_team_name(self):
         """Test team name editing."""

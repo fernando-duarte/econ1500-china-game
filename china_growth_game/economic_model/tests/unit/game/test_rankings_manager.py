@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import logging
-from rankings_manager import RankingsManager
+import numpy as np
+from china_growth_game.economic_model.game.rankings_manager import RankingsManager
 
 class TestRankingsManager(unittest.TestCase):
     """Test cases for the RankingsManager class."""
@@ -110,7 +111,7 @@ class TestRankingsManager(unittest.TestCase):
         self.assertEqual(rankings["net_exports"], ["team3", "team1", "team2"])
         self.assertEqual(rankings["balanced_economy"], ["team2", "team1", "team3"])
         
-    @patch('rankings_manager.logger')
+    @patch('china_growth_game.economic_model.game.rankings_manager.logger')
     def test_calculate_rankings_with_error(self, mock_logger):
         """Test ranking calculation with an error."""
         # Create a mock that raises an exception when accessed
