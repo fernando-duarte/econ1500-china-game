@@ -13,13 +13,17 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Add economic-model to Python path if it's not already there
-economic_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'china-growth-game/economic-model')
-if economic_model_path not in sys.path:
-    sys.path.insert(0, economic_model_path)
+# Add the package to Python path if it's not already there
+package_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if package_path not in sys.path:
+    sys.path.insert(0, package_path)
 
 # Import the canonical implementation
-from game_state import GameState, TeamManager, EventsManager, RankingsManager, VisualizationManager
+from china_growth_game.economic_model.game.game_state import GameState
+from china_growth_game.economic_model.game.team_management import TeamManager
+from china_growth_game.economic_model.game.events_manager import EventsManager
+from china_growth_game.economic_model.game.rankings_manager import RankingsManager
+from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
 
 # Re-export the classes for backwards compatibility
 __all__ = ['GameState', 'TeamManager', 'EventsManager', 'RankingsManager', 'VisualizationManager']

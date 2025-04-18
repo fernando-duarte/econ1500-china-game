@@ -2,7 +2,7 @@
 """
 China Growth Game Server Launcher
 
-This script ensures the economic model FastAPI server starts correctly 
+This script ensures the economic model FastAPI server starts correctly
 regardless of the current working directory.
 """
 import os
@@ -18,36 +18,36 @@ def main():
     parser.add_argument('--reload', action='store_true', help='Enable auto-reload for development')
     parser.add_argument('--log-level', type=str, default='info', help='Logging level')
     args = parser.parse_args()
-    
+
     # Get the directory containing this script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Path to the economic model directory
-    model_dir = os.path.join(script_dir, 'economic-model')
-    
-    # Ensure the economic-model directory exists
+
+    # Path to the economic model app directory
+    model_dir = os.path.join(os.path.dirname(script_dir), 'china_growth_game', 'economic_model', 'app')
+
+    # Ensure the economic model app directory exists
     if not os.path.exists(model_dir):
-        print(f"ERROR: Economic model directory not found at {model_dir}", file=sys.stderr)
+        print(f"ERROR: Economic model app directory not found at {model_dir}", file=sys.stderr)
         return 1
-    
-    # Change to the economic model directory
+
+    # Change to the economic model app directory
     os.chdir(model_dir)
     print(f"Working directory set to: {model_dir}")
-    
+
     # Build command arguments
     cmd = [
-        sys.executable, "-m", "uvicorn", "app:app", 
-        "--host", args.host, 
+        sys.executable, "-m", "uvicorn", "app:app",
+        "--host", args.host,
         "--port", str(args.port),
         "--log-level", args.log_level
     ]
-    
+
     if args.reload:
         cmd.append("--reload")
-    
+
     # Print the command we're about to run
     print(f"Starting server with command: {' '.join(cmd)}")
-    
+
     # Run the server
     try:
         subprocess.run(cmd)
@@ -60,4 +60,4 @@ def main():
         return 1
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

@@ -8,14 +8,14 @@ import pandas as pd
 import sys
 import os
 
-# Add economic-model to Python path if it's not already there
-economic_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'china-growth-game/economic-model')
-if economic_model_path not in sys.path:
-    sys.path.insert(0, economic_model_path)
+# Add the package to Python path if it's not already there
+package_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if package_path not in sys.path:
+    sys.path.insert(0, package_path)
 
 # Import from the consolidated core implementation and simulation wrapper
-from solow_core import get_default_parameters
-from solow_simulation import run_simulation
+from china_growth_game.economic_model.core.solow_core import get_default_parameters
+from china_growth_game.economic_model.core.solow_simulation import run_simulation
 
 # Explicit Game Instructions and Prize Announcements
 print("Welcome to China's Growth Game: Saving, Trade, and Prosperity (1980–2025)!")

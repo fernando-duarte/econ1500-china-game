@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Path to the canonical implementation
 canonical_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                             'china-growth-game', 'economic-model')
+                             'china_growth_game', 'economic_model', 'app')
 
 # Add the canonical path to sys.path if it's not already there
 if canonical_path not in sys.path:
