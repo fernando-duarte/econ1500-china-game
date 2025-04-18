@@ -16,16 +16,30 @@ async function getFromVault(secretPath) {
   }
   
   try {
-    // This would be replaced with actual Vault SDK integration
-    // const vault = require('node-vault')({
-    //   apiVersion: 'v1',
-    //   endpoint: process.env.VAULT_ADDR,
-    //   token: process.env.VAULT_TOKEN
-    // });
-    // const result = await vault.read(secretPath);
-    // return result.data;
-    console.log(`[PROD] Would fetch ${secretPath} from Vault`);
-    return null;
+    // Uncomment and use the actual Vault SDK integration
+    const vault = require('node-vault')({
+      apiVersion: 'v1',
+      endpoint: process.env.VAULT_ADDR,
+      token: process.env.VAULT_TOKEN
+    });
+    
+    // Add retry logic for better reliability
+    let retries = 3;
+    let result = null;
+    
+    while (retries > 0) {
+      try {
+        result = await vault.read(secretPath);
+        break; // Success, exit retry loop
+      } catch (retryError) {
+        retries--;
+        if (retries === 0) throw retryError;
+        // Exponential backoff 
+        await new Promise(r => setTimeout(r, (4 - retries) * 500));
+      }
+    }
+    
+    return result?.data || null;
   } catch (error) {
     console.error(`Error fetching secret from Vault: ${error.message}`);
     return null;
@@ -40,17 +54,45 @@ async function getFromAWS(secretName) {
   }
   
   try {
-    // This would be replaced with actual AWS SDK integration
-    // const AWS = require('aws-sdk');
-    // const secretsManager = new AWS.SecretsManager({
-    //   region: process.env.AWS_REGION || 'us-east-1'
-    // });
-    // const result = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
-    // return JSON.parse(result.SecretString);
-    console.log(`[PROD] Would fetch ${secretName} from AWS Secrets Manager`);
+    // Uncomment and use the actual AWS SDK integration
+    const AWS = require('aws-sdk');
+    
+    // Configure SDK with retries and timeout
+    const secretsManager = new AWS.SecretsManager({
+      region: process.env.AWS_REGION || 'us-east-1',
+      maxRetries: 3,
+      httpOptions: {
+        timeout: 3000
+      }
+    });
+    
+    const result = await secretsManager.getSecretValue({ 
+      SecretId: secretName 
+    }).promise();
+    
+    // Handle different secret value formats
+    if ('SecretString' in result) {
+      try {
+        return JSON.parse(result.SecretString);
+      } catch (parseError) {
+        // In case it's not JSON, return as is
+        return result.SecretString;
+      }
+    } else if ('SecretBinary' in result) {
+      // If binary secret, decode from Base64
+      const buff = Buffer.from(result.SecretBinary, 'base64');
+      return buff.toString('utf8');
+    }
+    
     return null;
   } catch (error) {
     console.error(`Error fetching secret from AWS: ${error.message}`);
+    // Specific error handling for different AWS errors
+    if (error.code === 'DecryptionFailureException') {
+      console.error('Secret cannot be decrypted using the provided KMS key');
+    } else if (error.code === 'ResourceNotFoundException') {
+      console.error(`Secret ${secretName} not found`);
+    }
     return null;
   }
 }
