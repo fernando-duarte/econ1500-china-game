@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 # Common configuration for all services
 x-service-defaults: &service-defaults
@@ -22,100 +22,61 @@ x-resource-limits: &resource-limits
         memory: 512M
 
 services:
-  # Main application services
-  frontend:
-    <<: *service-defaults
-    <<: *resource-limits
-    build: 
-      context: ./frontend
-      dockerfile: ${DOCKER_PATH:-docker}/dockerfiles/Dockerfile.frontend.prod
-      args:
-        NODE_VERSION: ${NODE_VERSION}
-    image: ${FRONTEND_IMAGE}:${FRONTEND_VERSION}-prod
+  # Main server - Unified Express + Socket.IO server
+  server:
+    build:
+      context: .
+      dockerfile: ./docker/server.Dockerfile
+    container_name: china-growth-game-server
     ports:
-      - "${FRONTEND_PORT:-80}:80"
-    depends_on:
-      - model
-    healthcheck:
-      <<: *healthcheck-defaults
-      test: ["CMD", "curl", "--fail", "http://localhost:80", "||", "exit", "1"]
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - ECONOMIC_MODEL_URL=http://model:8000
+      - ALLOWED_ORIGINS=https://your-production-domain.com
+      - USE_MOCK_MODEL=false
+    restart: unless-stopped
+    networks:
+      - china-growth-net
 
+  # Economic model - Python FastAPI service
   model:
-    <<: *service-defaults
-    build: 
-      context: ./model
-      dockerfile: ${DOCKER_PATH:-docker}/dockerfiles/Dockerfile.model.prod
-      args:
-        PYTHON_VERSION: ${PYTHON_VERSION}
-    image: ${MODEL_IMAGE}:${MODEL_VERSION}-prod
-    ports:
-      - "${MODEL_PORT:-8000}:8000"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
+    build:
+      context: ./economic-model
+      dockerfile: ../docker/model.Dockerfile
+    container_name: china-growth-model
+    # No port exposed in production - accessed only through internal network
     environment:
       - PYTHONUNBUFFERED=1
       - MODEL_ENV=production
-    healthcheck:
-      <<: *healthcheck-defaults
-      test: ["CMD", "curl", "--fail", "http://localhost:8000/health", "||", "exit", "1"]
-    volumes:
-      - model_data:/app/data
+    restart: unless-stopped
+    networks:
+      - china-growth-net
 
-  # China Growth Game services (optional, enabled via ENABLE_CHINA_GAME=true)
-  china-game-frontend:
-    <<: *service-defaults
-    <<: *resource-limits
-    profiles: ["china-game"]
+  # Frontend - Nginx server with built React app
+  frontend:
     build:
-      context: ./china-growth-game
-      dockerfile: ${DOCKER_PATH:-docker}/dockerfiles/Dockerfile.china-frontend.prod
-      args:
-        NODE_VERSION: ${NODE_VERSION}
-    image: china-game-frontend:${FRONTEND_VERSION}-prod
+      context: ./frontend
+      dockerfile: ../docker/frontend.Dockerfile
+    container_name: china-growth-frontend
     ports:
-      - "${CHINA_FRONTEND_PORT:-81}:80"
-    depends_on:
-      - china-game-model
-    healthcheck:
-      <<: *healthcheck-defaults
-      test: ["CMD", "curl", "--fail", "http://localhost:80", "||", "exit", "1"]
-
-  china-game-model:
-    <<: *service-defaults
-    profiles: ["china-game"]
-    build:
-      context: ./china-growth-game
-      dockerfile: ${DOCKER_PATH:-docker}/dockerfiles/Dockerfile.china-model.prod
-      args:
-        PYTHON_VERSION: ${PYTHON_VERSION}
-    image: china-game-model:${MODEL_VERSION}-prod
-    ports:
-      - "${CHINA_MODEL_PORT:-8001}:8000"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    environment:
-      - PYTHONUNBUFFERED=1
-      - MODEL_ENV=production
-    healthcheck:
-      <<: *healthcheck-defaults
-      test: ["CMD", "curl", "--fail", "http://localhost:8000/health", "||", "exit", "1"]
-    volumes:
-      - china_model_data:/app/data
+      - "80:3000"
+      - "443:3443"  # For HTTPS
+    restart: unless-stopped
+    networks:
+      - china-growth-net
+    # Add volumes for SSL certificates if needed
+    # volumes:
+    #  - /etc/letsencrypt:/etc/letsencrypt
 
 networks:
   solow-network:
+    driver: bridge
+  china-growth-net:
     driver: bridge
 
 volumes:
   model_data:
     name: solow_game_model_data_${ENV_SUFFIX:-prod}
-    driver: local
-  china_model_data:
-    name: china_game_model_data_${ENV_SUFFIX:-prod}
     driver: local
