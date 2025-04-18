@@ -93,6 +93,48 @@ const lastProcessed = {
   nextRound: null
 };
 
+// Mutex-like locking mechanism to prevent race conditions
+const locks = {
+  gameState: false,
+  teams: {}
+};
+
+// Lock acquisition with timeout
+async function acquireLock(lockName, id = null, timeoutMs = 5000) {
+  const lockKey = id ? `${lockName}_${id}` : lockName;
+  const startTime = Date.now();
+
+  while (locks[lockName] === true || (id && locks[lockName][id] === true)) {
+    // Check for timeout
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(`Timeout acquiring lock: ${lockKey}`);
+    }
+    // Wait a bit before trying again
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  // Acquire the lock
+  if (id) {
+    if (!locks[lockName]) locks[lockName] = {};
+    locks[lockName][id] = true;
+  } else {
+    locks[lockName] = true;
+  }
+
+  return true;
+}
+
+// Release a lock
+function releaseLock(lockName, id = null) {
+  if (id) {
+    if (locks[lockName] && locks[lockName][id]) {
+      locks[lockName][id] = false;
+    }
+  } else {
+    locks[lockName] = false;
+  }
+}
+
 // Idempotency helpers
 function isTeamDecisionProcessed(teamId, round) {
   return lastProcessed.updateTeam[teamId] === round;
@@ -198,21 +240,30 @@ io.on('connection', (socket) => {
           // Idempotency: Only process if this round is new for this team
           if (gameState.teams[teamId] && !isTeamDecisionProcessed(teamId, gameState.round)) {
             markTeamDecisionProcessed(teamId, gameState.round);
-            if (gameState.teams[teamId]) {
-              // Submit the decision
-              const decision = await economicModelService.submitDecision(
-                teamId,
-                savingsRate,
-                exchangeRate === 'fixed' ? 'market' : exchangeRate
-              );
 
-              // Update team data
-              gameState.teams[teamId].savingsRate = savingsRate;
-              gameState.teams[teamId].exchangeRate = exchangeRate;
+            try {
+              // Acquire lock for this team
+              await acquireLock('teams', teamId);
 
-              // Broadcast updated state to team members
-              io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
-              io.to(`team-${teamId}`).emit('decisionSubmitted', { success: true });
+              if (gameState.teams[teamId]) {
+                // Submit the decision
+                const decision = await economicModelService.submitDecision(
+                  teamId,
+                  savingsRate,
+                  exchangeRate
+                );
+
+                // Update team data
+                gameState.teams[teamId].savingsRate = savingsRate;
+                gameState.teams[teamId].exchangeRate = exchangeRate;
+
+                // Broadcast updated state to team members
+                io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
+                io.to(`team-${teamId}`).emit('decisionSubmitted', { success: true });
+              }
+            } finally {
+              // Always release the lock
+              releaseLock('teams', teamId);
             }
           }
         })(),
@@ -247,16 +298,24 @@ io.on('connection', (socket) => {
         // Race the operation against the timeout
         await Promise.race([
           (async () => {
-            // Start the game
-            const result = await economicModelService.startGame();
+            try {
+              // Acquire lock for game state
+              await acquireLock('gameState');
 
-            // Update our local game state
-            gameState.isRunning = true;
-            gameState.round = result.current_round;
-            gameState.timer = 300;
+              // Start the game
+              const result = await economicModelService.startGame();
 
-            // Broadcast updated game state
-            io.emit('gameState', gameState);
+              // Update our local game state
+              gameState.isRunning = true;
+              gameState.round = result.current_round;
+              gameState.timer = 300;
+
+              // Broadcast updated game state
+              io.emit('gameState', gameState);
+            } finally {
+              // Always release the lock
+              releaseLock('gameState');
+            }
           })(),
           timeoutPromise
         ]);
@@ -291,56 +350,72 @@ io.on('connection', (socket) => {
         // Race the operation against the timeout
         await Promise.race([
           (async () => {
-            // Advance the round
-            const result = await economicModelService.advanceRound();
+            try {
+              // Acquire lock for game state
+              await acquireLock('gameState');
 
-            // Get the updated game state
-            const modelGameState = await economicModelService.getGameState();
+              // Advance the round
+              const result = await economicModelService.advanceRound();
 
-            // Update our local game state
-            gameState.round = modelGameState.current_round;
-            gameState.timer = 300;
+              // Get the updated game state
+              const modelGameState = await economicModelService.getGameState();
 
-            // Get all team data in a single pass
-            const teamUpdates = {};
-            Object.keys(modelGameState.teams).forEach(teamId => {
-              if (gameState.teams[teamId]) {
-                const modelTeam = modelGameState.teams[teamId];
-                teamUpdates[teamId] = {
-                  output: modelTeam.current_state.GDP,
-                  consumption: modelTeam.current_state.Consumption,
-                  capital: modelTeam.current_state.Capital,
-                  labor: modelTeam.current_state['Labor Force'],
-                  netExports: modelTeam.current_state['Net Exports'],
-                  productivity: modelTeam.current_state['Productivity (TFP)'],
-                  humanCapital: modelTeam.current_state['Human Capital']
-                };
-              }
-            });
+              // Update our local game state
+              gameState.round = modelGameState.current_round;
+              gameState.timer = 300;
 
-            // Apply updates and save history in a single pass
-            Object.keys(teamUpdates).forEach(teamId => {
-              const team = gameState.teams[teamId];
-              const updates = teamUpdates[teamId];
-
-              // Save history
-              team.history.push({
-                round: gameState.round - 1,
-                savingsRate: team.savingsRate,
-                exchangeRate: team.exchangeRate,
-                output: team.output,
-                consumption: team.consumption,
-                netExports: team.netExports,
-                capital: team.capital,
-                labor: team.labor
+              // Get all team data in a single pass
+              const teamUpdates = {};
+              Object.keys(modelGameState.teams).forEach(teamId => {
+                if (gameState.teams[teamId]) {
+                  const modelTeam = modelGameState.teams[teamId];
+                  teamUpdates[teamId] = {
+                    output: modelTeam.current_state.GDP,
+                    consumption: modelTeam.current_state.Consumption,
+                    capital: modelTeam.current_state.Capital,
+                    labor: modelTeam.current_state['Labor Force'],
+                    netExports: modelTeam.current_state['Net Exports'],
+                    productivity: modelTeam.current_state['Productivity (TFP)'],
+                    humanCapital: modelTeam.current_state['Human Capital']
+                  };
+                }
               });
 
-              // Apply updates
-              Object.assign(team, updates);
-            });
+              // Apply updates and save history in a single pass
+              for (const teamId of Object.keys(teamUpdates)) {
+                try {
+                  // Acquire lock for each team
+                  await acquireLock('teams', teamId);
 
-            // Broadcast updated game state
-            io.emit('gameState', gameState);
+                  const team = gameState.teams[teamId];
+                  const updates = teamUpdates[teamId];
+
+                  // Save history
+                  team.history.push({
+                    round: gameState.round - 1,
+                    savingsRate: team.savingsRate,
+                    exchangeRate: team.exchangeRate,
+                    output: team.output,
+                    consumption: team.consumption,
+                    netExports: team.netExports,
+                    capital: team.capital,
+                    labor: team.labor
+                  });
+
+                  // Apply updates
+                  Object.assign(team, updates);
+                } finally {
+                  // Always release the team lock
+                  releaseLock('teams', teamId);
+                }
+              }
+
+              // Broadcast updated game state
+              io.emit('gameState', gameState);
+            } finally {
+              // Always release the game state lock
+              releaseLock('gameState');
+            }
           })(),
           timeoutPromise
         ]);
@@ -427,15 +502,24 @@ app.post('/api/game/start', async (req, res) => {
     // Use the same logic as the socket event
     if (!gameState.isRunning && !isGameStartProcessed()) {
       markGameStartProcessed();
-      const result = await economicModelService.startGame();
-      gameState.isRunning = true;
-      gameState.round = result.current_round;
-      gameState.timer = 300;
 
-      // Broadcast to all clients
-      io.emit('gameState', gameState);
+      try {
+        // Acquire lock for game state
+        await acquireLock('gameState');
 
-      res.status(200).json({ success: true, game: gameState });
+        const result = await economicModelService.startGame();
+        gameState.isRunning = true;
+        gameState.round = result.current_round;
+        gameState.timer = 300;
+
+        // Broadcast to all clients
+        io.emit('gameState', gameState);
+
+        res.status(200).json({ success: true, game: gameState });
+      } finally {
+        // Always release the lock
+        releaseLock('gameState');
+      }
     } else {
       res.status(400).json({ success: false, message: 'Game already started' });
     }
@@ -450,57 +534,74 @@ app.post('/api/game/advance', async (req, res) => {
     // Use the same logic as the socket event
     if (!isRoundAdvanceProcessed(gameState.round) && gameState.round < 10) {
       markRoundAdvanceProcessed(gameState.round);
-      const result = await economicModelService.advanceRound();
 
-      // Get updated game state
-      const modelGameState = await economicModelService.getGameState();
+      try {
+        // Acquire lock for game state
+        await acquireLock('gameState');
 
-      // Update our state
-      gameState.round = modelGameState.current_round;
-      gameState.timer = 300;
+        const result = await economicModelService.advanceRound();
 
-      // Get all team data in a single pass
-      const teamUpdates = {};
-      Object.keys(modelGameState.teams).forEach(teamId => {
-        if (gameState.teams[teamId]) {
-          const modelTeam = modelGameState.teams[teamId];
-          teamUpdates[teamId] = {
-            output: modelTeam.current_state.GDP,
-            consumption: modelTeam.current_state.Consumption,
-            capital: modelTeam.current_state.Capital,
-            labor: modelTeam.current_state['Labor Force'],
-            netExports: modelTeam.current_state['Net Exports'],
-            productivity: modelTeam.current_state['Productivity (TFP)'],
-            humanCapital: modelTeam.current_state['Human Capital']
-          };
-        }
-      });
+        // Get updated game state
+        const modelGameState = await economicModelService.getGameState();
 
-      // Apply updates and save history in a single pass
-      Object.keys(teamUpdates).forEach(teamId => {
-        const team = gameState.teams[teamId];
-        const updates = teamUpdates[teamId];
+        // Update our state
+        gameState.round = modelGameState.current_round;
+        gameState.timer = 300;
 
-        // Save history
-        team.history.push({
-          round: gameState.round - 1,
-          savingsRate: team.savingsRate,
-          exchangeRate: team.exchangeRate,
-          output: team.output,
-          consumption: team.consumption,
-          netExports: team.netExports,
-          capital: team.capital,
-          labor: team.labor
+        // Get all team data in a single pass
+        const teamUpdates = {};
+        Object.keys(modelGameState.teams).forEach(teamId => {
+          if (gameState.teams[teamId]) {
+            const modelTeam = modelGameState.teams[teamId];
+            teamUpdates[teamId] = {
+              output: modelTeam.current_state.GDP,
+              consumption: modelTeam.current_state.Consumption,
+              capital: modelTeam.current_state.Capital,
+              labor: modelTeam.current_state['Labor Force'],
+              netExports: modelTeam.current_state['Net Exports'],
+              productivity: modelTeam.current_state['Productivity (TFP)'],
+              humanCapital: modelTeam.current_state['Human Capital']
+            };
+          }
         });
 
-        // Apply updates
-        Object.assign(team, updates);
-      });
+        // Apply updates and save history in a single pass
+        for (const teamId of Object.keys(teamUpdates)) {
+          try {
+            // Acquire lock for each team
+            await acquireLock('teams', teamId);
 
-      // Broadcast to all clients
-      io.emit('gameState', gameState);
+            const team = gameState.teams[teamId];
+            const updates = teamUpdates[teamId];
 
-      res.status(200).json({ success: true, game: gameState });
+            // Save history
+            team.history.push({
+              round: gameState.round - 1,
+              savingsRate: team.savingsRate,
+              exchangeRate: team.exchangeRate,
+              output: team.output,
+              consumption: team.consumption,
+              netExports: team.netExports,
+              capital: team.capital,
+              labor: team.labor
+            });
+
+            // Apply updates
+            Object.assign(team, updates);
+          } finally {
+            // Always release the team lock
+            releaseLock('teams', teamId);
+          }
+        }
+
+        // Broadcast to all clients
+        io.emit('gameState', gameState);
+
+        res.status(200).json({ success: true, game: gameState });
+      } finally {
+        // Always release the game state lock
+        releaseLock('gameState');
+      }
     } else if (gameState.round >= 10) {
       res.status(400).json({ success: false, message: 'Game already ended' });
     } else {
@@ -560,20 +661,28 @@ app.post('/api/teams/:teamId/decisions', async (req, res) => {
     if (!isTeamDecisionProcessed(teamId, gameState.round)) {
       markTeamDecisionProcessed(teamId, gameState.round);
 
-      const decision = await economicModelService.submitDecision(
-        teamId,
-        savingsRate,
-        exchangeRatePolicy === 'fixed' ? 'market' : exchangeRatePolicy
-      );
+      try {
+        // Acquire lock for this team
+        await acquireLock('teams', teamId);
 
-      // Update local state
-      gameState.teams[teamId].savingsRate = savingsRate;
-      gameState.teams[teamId].exchangeRate = exchangeRatePolicy;
+        const decision = await economicModelService.submitDecision(
+          teamId,
+          savingsRate,
+          exchangeRatePolicy
+        );
 
-      // Emit to team channel
-      io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
+        // Update local state
+        gameState.teams[teamId].savingsRate = savingsRate;
+        gameState.teams[teamId].exchangeRate = exchangeRatePolicy;
 
-      res.status(201).json({ success: true, decision });
+        // Emit to team channel
+        io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
+
+        res.status(201).json({ success: true, decision });
+      } finally {
+        // Always release the lock
+        releaseLock('teams', teamId);
+      }
     } else {
       res.status(400).json({ success: false, message: 'Decision already submitted for this round' });
     }

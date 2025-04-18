@@ -131,7 +131,7 @@ io.on('connection', (socket) => {
           const response = await axios.post(`${modelApiUrl}/teams/decisions`, {
             team_id: teamId,
             savings_rate: savingsRate,
-            exchange_rate_policy: exchangeRate === 'fixed' ? 'market' : exchangeRate // Convert to model's expected format
+            exchange_rate_policy: exchangeRate // Conversion handled in the service layer
           });
 
           // Get the updated team state

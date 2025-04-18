@@ -131,6 +131,10 @@ class EconomicModelService {
    * @throws {Error} If decision submission fails
    */
   async submitDecision(teamId, savingsRate, exchangeRatePolicy) {
+    // Standardize exchange rate policy handling
+    // Convert 'fixed' to 'market' for consistency across all code paths
+    const normalizedExchangeRatePolicy = exchangeRatePolicy === 'fixed' ? 'market' : exchangeRatePolicy;
+
     if (this.useMock) {
       if (!this.mockGameState.teams[teamId]) {
         throw new Error(`Team ${teamId} not found`);
@@ -142,7 +146,7 @@ class EconomicModelService {
         round: this.mockGameState.current_round,
         year: this.mockGameState.current_year,
         savingsRate: savingsRate,
-        exchangeRatePolicy: exchangeRatePolicy,
+        exchangeRatePolicy: normalizedExchangeRatePolicy,
         submittedAt: new Date().toISOString()
       };
 
@@ -152,7 +156,7 @@ class EconomicModelService {
         round: this.mockGameState.current_round,
         year: this.mockGameState.current_year,
         savings_rate: savingsRate,
-        exchange_rate_policy: exchangeRatePolicy,
+        exchange_rate_policy: normalizedExchangeRatePolicy,
         submitted_at: new Date().toISOString()
       };
 
@@ -165,7 +169,7 @@ class EconomicModelService {
       const apiPayload = {
         team_id: teamId,
         savings_rate: savingsRate,
-        exchange_rate_policy: exchangeRatePolicy
+        exchange_rate_policy: normalizedExchangeRatePolicy
       };
 
       const response = await axios.post(`${this.baseUrl}/teams/decisions`, apiPayload);
@@ -302,6 +306,11 @@ class EconomicModelService {
    * @throws {Error} If team not found or retrieval fails
    */
   async getTeamState(teamId) {
+    // Validate input
+    if (!teamId) {
+      throw new Error('Team ID is required');
+    }
+
     if (this.useMock) {
       if (!this.mockGameState.teams[teamId]) {
         throw new Error(`Team ${teamId} not found`);
@@ -311,8 +320,19 @@ class EconomicModelService {
 
     try {
       const response = await axios.get(`${this.baseUrl}/teams/${teamId}`);
+
+      // Validate response
+      if (!response || !response.data) {
+        throw new Error(`Invalid response for team ${teamId}`);
+      }
+
       return response.data;
     } catch (error) {
+      // Handle specific error cases
+      if (error.response && error.response.status === 404) {
+        throw new Error(`Team ${teamId} not found`);
+      }
+
       console.error(`Failed to get team state for ${teamId}:`, error.message);
       throw error;
     }
@@ -346,6 +366,11 @@ class EconomicModelService {
    * @throws {Error} If team not found or visualization retrieval fails
    */
   async getTeamVisualizations(teamId) {
+    // Validate input
+    if (!teamId) {
+      throw new Error('Team ID is required');
+    }
+
     if (this.useMock) {
       if (!this.mockGameState.teams[teamId]) {
         throw new Error(`Team ${teamId} not found`);
@@ -363,8 +388,19 @@ class EconomicModelService {
 
     try {
       const response = await axios.get(`${this.baseUrl}/results/visualizations/${teamId}`);
+
+      // Validate response
+      if (!response || !response.data) {
+        throw new Error(`Invalid response for team visualizations ${teamId}`);
+      }
+
       return response.data;
     } catch (error) {
+      // Handle specific error cases
+      if (error.response && error.response.status === 404) {
+        throw new Error(`Team ${teamId} not found or has no visualization data`);
+      }
+
       console.error(`Failed to get visualizations for team ${teamId}:`, error.message);
       throw error;
     }
