@@ -5,12 +5,38 @@ Test runner for the China Growth Game package.
 
 import unittest
 import sys
+import argparse
 
 if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Run tests for the China Growth Game package.')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Run tests with verbose output')
+    parser.add_argument('--coverage', '-c', action='store_true', help='Generate coverage report')
+    args = parser.parse_args()
+
+    # Set verbosity level
+    verbosity = 2 if args.verbose else 1
+
     # Discover and run all tests
     test_suite = unittest.defaultTestLoader.discover('china_growth_game/economic_model/tests')
-    test_runner = unittest.TextTestRunner(verbosity=2)
-    result = test_runner.run(test_suite)
-    
+    test_runner = unittest.TextTestRunner(verbosity=verbosity)
+
+    # Run tests with coverage if requested
+    if args.coverage:
+        try:
+            import coverage
+            cov = coverage.Coverage()
+            cov.start()
+            result = test_runner.run(test_suite)
+            cov.stop()
+            cov.save()
+            print('\nCoverage report:')
+            cov.report()
+        except ImportError:
+            print('\nCoverage package not installed. Run "pip install coverage" to enable coverage reporting.')
+            result = test_runner.run(test_suite)
+    else:
+        result = test_runner.run(test_suite)
+
     # Exit with non-zero code if tests failed
     sys.exit(not result.wasSuccessful())
