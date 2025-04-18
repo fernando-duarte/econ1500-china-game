@@ -55,11 +55,11 @@ const lastProcessed = {
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
-  
+
   // Join team room
   socket.on('joinTeam', (teamId) => {
     socket.join(`team-${teamId}`);
-    
+
     // Initialize team if not exists
     if (!gameState.teams[teamId]) {
       gameState.teams[teamId] = {
@@ -73,11 +73,11 @@ io.on('connection', (socket) => {
         history: []
       };
     }
-    
+
     // Send current game state to new user
     socket.emit('gameState', gameState);
   });
-  
+
   // Handle team decisions
   socket.on('updateTeam', async (data) => {
     const { teamId, savingsRate, exchangeRate } = data;
@@ -88,84 +88,151 @@ io.on('connection', (socket) => {
         // Update team decisions
         gameState.teams[teamId].savingsRate = savingsRate;
         gameState.teams[teamId].exchangeRate = exchangeRate;
-        
+
         // Broadcast updated state to team members
         io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
-        
-        // Calculate economic outcomes
+
+        // Submit decision to the model API
         try {
-          const response = await axios.post(`${modelApiUrl}/calculate`, {
+          // First, check if the team exists in the model
+          let teamExists = false;
+          try {
+            await axios.get(`${modelApiUrl}/teams/${teamId}`);
+            teamExists = true;
+          } catch (error) {
+            if (error.response && error.response.status === 404) {
+              // Team doesn't exist, create it
+              await axios.post(`${modelApiUrl}/teams/create`, {
+                team_name: gameState.teams[teamId].name
+              });
+            } else {
+              throw error;
+            }
+          }
+
+          // Submit the decision
+          const response = await axios.post(`${modelApiUrl}/teams/decisions`, {
+            team_id: teamId,
             savings_rate: savingsRate,
-            capital: gameState.teams[teamId].capital,
-            labor: gameState.teams[teamId].labor,
-            exchange_rate: exchangeRate
+            exchange_rate_policy: exchangeRate === 'fixed' ? 'market' : exchangeRate // Convert to model's expected format
           });
-          
+
+          // Get the updated team state
+          const teamState = await axios.get(`${modelApiUrl}/teams/${teamId}`);
+
           // Update team data with model results
-          const results = response.data;
-          gameState.teams[teamId].output = results.output;
-          gameState.teams[teamId].consumption = results.consumption;
-          gameState.teams[teamId].nextCapital = results.next_capital;
-          
+          const currentState = teamState.data.current_state;
+          gameState.teams[teamId].output = currentState.GDP;
+          gameState.teams[teamId].consumption = currentState.Consumption;
+          gameState.teams[teamId].nextCapital = currentState.Capital;
+
           // Broadcast results to team
-          io.to(`team-${teamId}`).emit('calculationResults', results);
+          io.to(`team-${teamId}`).emit('calculationResults', {
+            output: currentState.GDP,
+            consumption: currentState.Consumption,
+            investment: currentState.Investment,
+            next_capital: currentState.Capital
+          });
         } catch (error) {
           console.error('Error calculating economic outcomes:', error.message);
+          if (error.response) {
+            console.error('Response data:', error.response.data);
+          }
         }
       }
     }
   });
-  
+
   // Professor control events
-  socket.on('startGame', () => {
+  socket.on('startGame', async () => {
     // Idempotency: Only process if not already started
     if (!gameState.isRunning && lastProcessed.startGame !== true) {
       lastProcessed.startGame = true;
-      gameState.isRunning = true;
-      gameState.round = 1;
-      gameState.timer = 300;
-      io.emit('gameState', gameState);
+
+      try {
+        // Initialize the game in the model API
+        await axios.post(`${modelApiUrl}/game/init`);
+
+        // Start the game in the model API
+        const response = await axios.post(`${modelApiUrl}/game/start`);
+
+        // Update our local game state
+        gameState.isRunning = true;
+        gameState.round = response.data.current_round;
+        gameState.timer = 300;
+
+        // Broadcast updated game state
+        io.emit('gameState', gameState);
+      } catch (error) {
+        console.error('Error starting game:', error.message);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
+        }
+        // Reset idempotency flag if there was an error
+        lastProcessed.startGame = false;
+      }
     }
   });
-  
+
   socket.on('pauseGame', () => {
     gameState.isRunning = false;
     io.emit('gameState', gameState);
   });
-  
-  socket.on('nextRound', () => {
+
+  socket.on('nextRound', async () => {
     // Idempotency: Only process if round is not already advanced
     if (lastProcessed.nextRound !== gameState.round && gameState.round < 10) {
       lastProcessed.nextRound = gameState.round;
-      gameState.round++;
-      gameState.timer = 300;
-      
-      // Update all teams for the new round
-      Object.keys(gameState.teams).forEach(teamId => {
-        const team = gameState.teams[teamId];
-        
-        // Save history
-        team.history.push({
-          round: gameState.round - 1,
-          savingsRate: team.savingsRate,
-          exchangeRate: team.exchangeRate,
-          output: team.output,
-          consumption: team.consumption
+
+      try {
+        // Call the model API to advance the round
+        const response = await axios.post(`${modelApiUrl}/game/next-round`);
+
+        // Get the updated game state
+        const modelGameState = await axios.get(`${modelApiUrl}/game/state`);
+
+        // Update our local game state
+        gameState.round = modelGameState.data.current_round;
+        gameState.timer = 300;
+
+        // Update all teams with data from the model
+        const modelTeams = modelGameState.data.teams;
+        Object.keys(modelTeams).forEach(teamId => {
+          if (gameState.teams[teamId]) {
+            const modelTeam = modelTeams[teamId];
+            const team = gameState.teams[teamId];
+
+            // Save history
+            team.history.push({
+              round: gameState.round - 1,
+              savingsRate: team.savingsRate,
+              exchangeRate: team.exchangeRate,
+              output: team.output,
+              consumption: team.consumption
+            });
+
+            // Update team data from model
+            team.output = modelTeam.current_state.GDP;
+            team.consumption = modelTeam.current_state.Consumption;
+            team.capital = modelTeam.current_state.Capital;
+            team.labor = modelTeam.current_state['Labor Force'];
+          }
         });
-        
-        // Update capital for next round
-        if (team.nextCapital) {
-          team.capital = team.nextCapital;
+
+        // Broadcast updated game state
+        io.emit('gameState', gameState);
+      } catch (error) {
+        console.error('Error advancing round:', error.message);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
         }
-      });
-      
-      io.emit('gameState', gameState);
+      }
     } else if (gameState.round >= 10 && !gameState.isRunning) {
       // End of game
       io.emit('gameEnd', calculateFinalScores());
     }
   });
-  
+
   // Disconnect handling
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
@@ -175,7 +242,7 @@ io.on('connection', (socket) => {
 // Helper function to calculate final scores
 function calculateFinalScores() {
   const scores = {};
-  
+
   Object.keys(gameState.teams).forEach(teamId => {
     const team = gameState.teams[teamId];
     // Simple scoring: sum of consumption across all rounds
@@ -183,7 +250,7 @@ function calculateFinalScores() {
     scores[teamId] = totalConsumption;
     team.score = totalConsumption;
   });
-  
+
   return scores;
 }
 
@@ -212,4 +279,4 @@ app.get('/api/teams/:id', (req, res) => {
 // Start server
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
-}); 
+});

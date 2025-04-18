@@ -2,9 +2,13 @@
  * Service for communicating with the economic model microservice
  * Simplified implementation for development
  */
+const axios = require('axios');
 class EconomicModelService {
   constructor() {
     console.log('Initializing EconomicModelService in mock mode');
+    // Set the base URL for API calls
+    this.baseUrl = process.env.ECONOMIC_MODEL_URL || 'http://localhost:8000';
+
     // Mock data for development
     this.mockGameState = {
       teams: [],
@@ -39,7 +43,7 @@ class EconomicModelService {
       },
       history: []
     };
-    
+
     this.mockGameState.teams.push(newTeam);
     return newTeam;
   }
@@ -52,7 +56,7 @@ class EconomicModelService {
       exchange_rate_policy: exchangeRatePolicy,
       submitted_at: new Date().toISOString()
     };
-    
+
     return decision;
   }
 
@@ -60,14 +64,14 @@ class EconomicModelService {
     this.mockGameState.game_started = true;
     this.mockGameState.current_round = 1;
     this.mockGameState.current_year = 1985;
-    
+
     return this.mockGameState;
   }
 
   async advanceRound() {
     this.mockGameState.current_round += 1;
     this.mockGameState.current_year += 5;
-    
+
     // Simulate updating all teams
     this.mockGameState.teams.forEach(team => {
       // Simulate 3% growth
@@ -76,11 +80,11 @@ class EconomicModelService {
       team.current_state['Labor Force'] *= 1.01;
       team.current_state['Human Capital'] *= 1.01;
       team.current_state['Productivity (TFP)'] *= 1.01;
-      
+
       // Add to history
       team.history.push({...team.current_state, round: this.mockGameState.current_round - 1});
     });
-    
+
     return this.mockGameState;
   }
 
@@ -165,4 +169,4 @@ class EconomicModelService {
   }
 }
 
-module.exports = EconomicModelService; 
+module.exports = EconomicModelService;

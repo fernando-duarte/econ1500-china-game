@@ -1,9 +1,24 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Path
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, List, Optional, Any
 import numpy as np
 import pandas as pd
-from typing import Dict, Any
 import os
+import sys
+import uvicorn
+
+# Add the current directory to sys.path if it's not already there
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# Import the GameState class
+from game_state import GameState
+
+# Create a single instance of the game state to be used for all requests
+# This implements in-memory state management as requested
+game_state = GameState()
 
 app = FastAPI(
     title="China's Growth Game Economic Model",
@@ -20,50 +35,215 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for Docker health checks."""
-    return {"status": "healthy"}
+# Pydantic models for API requests and responses
+class InitialConditions(BaseModel):
+    Y: float
+    K: float
+    L: float
+    H: float
+    A: float
+    NX: float
+
+class Parameters(BaseModel):
+    alpha: float
+    delta: float
+    g: float
+    theta: float
+    phi: float
+    s: float  # Savings rate (set by students)
+    beta: float
+    n: float
+    eta: float
+
+class SimulationRequest(BaseModel):
+    initial_year: int
+    initial_conditions: InitialConditions
+    parameters: Parameters
+    years: List[int]
+    historical_data: Optional[Dict] = None
+
+class SimulationResponse(BaseModel):
+    results: Dict[str, List[float]]
+
+class TeamCreateRequest(BaseModel):
+    team_name: Optional[str] = None
+
+class DecisionSubmitRequest(BaseModel):
+    team_id: str
+    savings_rate: float = Field(..., ge=0.01, le=0.99)
+    exchange_rate_policy: str = Field(..., pattern='^(undervalue|market|overvalue)$')
+
+    @field_validator('savings_rate')
+    @classmethod
+    def validate_savings_rate(cls, v):
+        if not (0.01 <= v <= 0.99):
+            raise ValueError("Savings rate must be between 1% and 99%")
+        return v
+
+    @field_validator('exchange_rate_policy')
+    @classmethod
+    def validate_exchange_rate_policy(cls, v):
+        if v not in ["undervalue", "market", "overvalue"]:
+            raise ValueError("Exchange rate policy must be 'undervalue', 'market', or 'overvalue'")
+        return v
+
+class GameStateResponse(BaseModel):
+    game_id: str
+    current_round: int
+    current_year: int
+    teams: Dict[str, Dict[str, Any]]
+    rankings: Dict[str, List[str]]
+    game_started: bool
+    game_ended: bool
+
+class TeamEditNameRequest(BaseModel):
+    new_name: str
 
 @app.get("/")
-async def root():
-    """Root endpoint with API information."""
-    return {
-        "message": "Welcome to the China's Growth Game Economic Model API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+def read_root():
+    return {"message": "China's Growth Game Economic Model API"}
 
+@app.get("/health")
+def health_check():
+    """Health check endpoint for container health monitoring."""
+    return {"status": "ok", "message": "Economic model service is running"}
+
+# Game flow endpoints
+@app.post("/game/init", response_model=GameStateResponse)
+def initialize_game():
+    """Initialize a new game."""
+    global game_state
+    game_state = GameState()  # Reset the game state
+    return game_state.get_game_state()
+
+@app.post("/game/start", response_model=GameStateResponse)
+def start_game():
+    """Start the game with registered teams."""
+    try:
+        result = game_state.start_game()
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/game/next-round")
+def advance_to_next_round():
+    """Advance to the next round, processing all team decisions."""
+    try:
+        result = game_state.advance_round()
+        # Log the result for debugging
+        import logging
+        logging.debug(f"Advance round result: {result}")
+
+        # If we got a successful result, return it
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # More detailed error reporting for debugging
+        import traceback
+        error_detail = {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+        raise HTTPException(status_code=500, detail=error_detail)
+
+@app.get("/game/state", response_model=GameStateResponse)
+def get_game_state():
+    """Get the current game state."""
+    return game_state.get_game_state()
+
+# Team management endpoints
+@app.post("/teams/create")
+def create_team(request: TeamCreateRequest):
+    """Create a new team."""
+    try:
+        team = game_state.create_team(request.team_name)
+        return team
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/teams/decisions")
+def submit_decision(request: DecisionSubmitRequest):
+    """Submit a team's decision for the current round."""
+    try:
+        decision = game_state.submit_decision(
+            request.team_id,
+            request.savings_rate,
+            request.exchange_rate_policy
+        )
+        return decision
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/teams/{team_id}")
+def get_team_state(team_id: str):
+    """Get the state of a specific team."""
+    try:
+        return game_state.get_team_state(team_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.post("/teams/{team_id}/edit-name")
+def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None):
+    """Edit a team's name, enforcing uniqueness and appropriateness."""
+    try:
+        team = game_state.team_manager.edit_team_name(team_id, request.new_name)
+        return team
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# For backward compatibility with the old API
 @app.post("/calculate")
 async def calculate_growth(data: Dict[Any, Any]):
-    """Calculate economic growth based on provided parameters."""
+    """Calculate economic growth based on provided parameters (legacy endpoint)."""
     try:
-        # Sample calculation logic (replace with actual model)
+        # Extract parameters from the request
         savings_rate = data.get("savings_rate", 0.3)
         capital = data.get("capital", 100)
         labor = data.get("labor", 100)
-        
-        # Simple Cobb-Douglas production function (Y = A * K^α * L^(1-α))
-        alpha = 0.3  # Capital share
-        productivity = 1.0  # Total factor productivity
-        
-        # Output calculation
-        output = productivity * (capital ** alpha) * (labor ** (1 - alpha))
-        
-        # Investment and next period capital
-        investment = savings_rate * output
-        next_capital = capital * 0.9 + investment  # 10% depreciation
-        
+        exchange_rate = data.get("exchange_rate", "market")
+
+        # Create a temporary team for calculation
+        temp_team_id = "temp-" + str(hash(str(data)))
+        team = game_state.create_team("Temp Calculation Team")
+
+        # Override the team's state with the provided values
+        team["current_state"]["K"] = capital
+        team["current_state"]["L"] = labor
+
+        # Submit a decision for this team
+        game_state.submit_decision(temp_team_id, savings_rate, exchange_rate)
+
+        # Calculate the results for this team
+        results = game_state.calculate_team_results(temp_team_id)
+
+        # Clean up the temporary team
+        game_state.team_manager.teams.pop(temp_team_id, None)
+
+        # Return the results in the old format for compatibility
         return {
-            "output": output,
-            "investment": investment,
-            "consumption": output - investment,
-            "next_capital": next_capital
+            "output": results["Y_t"],
+            "investment": results["I_t"],
+            "consumption": results["C_t"],
+            "next_capital": results["K_next"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Results and visualization endpoints
+@app.get("/results/rankings")
+def get_rankings():
+    """Get current rankings."""
+    return game_state.rankings_manager.rankings
+
+@app.get("/results/visualizations/{team_id}")
+def get_team_visualizations(team_id: str):
+    """Get visualization data for a specific team."""
+    try:
+        return game_state.get_team_visualizations(team_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 if __name__ == "__main__":
-    import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True) 
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)
