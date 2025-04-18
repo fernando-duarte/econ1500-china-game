@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException, Depends, Path
+from fastapi import FastAPI, HTTPException, Depends, Path, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
@@ -7,6 +9,96 @@ import pandas as pd
 import os
 import sys
 import uvicorn
+import logging
+import time
+from collections import defaultdict
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
+# Simple API key authorization
+API_KEY_NAME = "X-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+# In production, this would be stored securely and not in code
+ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "admin-dev-key")
+
+# Team authorization mapping (in production, this would be in a database)
+team_api_keys = {}
+
+# Simple rate limiting implementation
+class RateLimiter:
+    def __init__(self, requests_per_minute=60):
+        self.requests_per_minute = requests_per_minute
+        self.request_counts = defaultdict(list)
+
+    def is_rate_limited(self, client_id):
+        # Get current timestamp
+        now = time.time()
+        minute_ago = now - 60
+
+        # Clean up old requests
+        self.request_counts[client_id] = [ts for ts in self.request_counts[client_id] if ts > minute_ago]
+
+        # Check if rate limit exceeded
+        if len(self.request_counts[client_id]) >= self.requests_per_minute:
+            return True
+
+        # Add current request
+        self.request_counts[client_id].append(now)
+        return False
+
+# Create rate limiter instance
+rate_limiter = RateLimiter(requests_per_minute=60)
+
+# Rate limiting middleware
+async def rate_limit_middleware(request: Request, call_next):
+    # Get client IP or API key for rate limiting
+    client_id = request.headers.get(API_KEY_NAME, request.client.host)
+
+    # Check if rate limited
+    if rate_limiter.is_rate_limited(client_id):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Please try again later."}
+        )
+
+    # Process the request
+    response = await call_next(request)
+    return response
+
+async def get_api_key(api_key_header: str = Header(None, alias=API_KEY_NAME)):
+    return api_key_header
+
+async def verify_admin_api_key(api_key: str = Depends(get_api_key)):
+    if api_key != ADMIN_API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API key",
+        )
+    return api_key
+
+async def verify_team_api_key(request: Request, api_key: str = Depends(get_api_key)):
+    # Get team_id from path parameters
+    team_id = request.path_params.get("team_id")
+
+    # Admin key can access any team
+    if api_key == ADMIN_API_KEY:
+        return api_key
+
+    # Check if this is a valid team key
+    if team_id not in team_api_keys or team_api_keys[team_id] != api_key:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API key for this team",
+        )
+    return api_key
 
 # Add the current directory to sys.path if it's not already there
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,13 +118,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add rate limiting middleware
+app.middleware("http")(rate_limit_middleware)
+
 # Configure CORS
+import os
+
+# Get allowed origins from environment or use default for development
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Pydantic models for API requests and responses
@@ -110,14 +210,14 @@ def health_check():
 
 # Game flow endpoints
 @app.post("/game/init", response_model=GameStateResponse)
-def initialize_game():
+def initialize_game(api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
     """Initialize a new game."""
     global game_state
     game_state = GameState()  # Reset the game state
     return game_state.get_game_state()
 
 @app.post("/game/start", response_model=GameStateResponse)
-def start_game():
+def start_game(api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
     """Start the game with registered teams."""
     try:
         result = game_state.start_game()
@@ -126,7 +226,7 @@ def start_game():
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/game/next-round")
-def advance_to_next_round():
+def advance_to_next_round(api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
     """Advance to the next round, processing all team decisions."""
     try:
         result = game_state.advance_round()
@@ -139,13 +239,14 @@ def advance_to_next_round():
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # More detailed error reporting for debugging
+        # Log the detailed error for server-side debugging
         import traceback
-        error_detail = {
-            "error": str(e),
-            "traceback": traceback.format_exc()
-        }
-        raise HTTPException(status_code=500, detail=error_detail)
+        logger = logging.getLogger("app")
+        logger.error(f"Error in advance_to_next_round: {str(e)}")
+        logger.error(traceback.format_exc())
+
+        # Return a generic error message to the client
+        raise HTTPException(status_code=500, detail={"error": "An internal server error occurred"})
 
 @app.get("/game/state", response_model=GameStateResponse)
 def get_game_state():
@@ -154,17 +255,35 @@ def get_game_state():
 
 # Team management endpoints
 @app.post("/teams/create")
-def create_team(request: TeamCreateRequest):
+def create_team(request: TeamCreateRequest, api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
     """Create a new team."""
     try:
         team = game_state.create_team(request.team_name)
-        return team
+
+        # Generate and store API key for this team
+        import secrets
+        team_api_key = secrets.token_urlsafe(32)
+        team_id = team["team_id"]
+        team_api_keys[team_id] = team_api_key
+
+        # Add API key to response (in production, this would be securely transmitted)
+        response = dict(team)
+        response["api_key"] = team_api_key
+
+        return response
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/teams/decisions")
-def submit_decision(request: DecisionSubmitRequest):
+def submit_decision(request: DecisionSubmitRequest, api_key: str = Depends(get_api_key)):
     """Submit a team's decision for the current round."""
+    # Check if this is the admin key or the team's key
+    team_id = request.team_id
+    if api_key != ADMIN_API_KEY and (team_id not in team_api_keys or team_api_keys[team_id] != api_key):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid API key for this team",
+        )
     try:
         decision = game_state.submit_decision(
             request.team_id,
@@ -176,7 +295,7 @@ def submit_decision(request: DecisionSubmitRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/teams/{team_id}")
-def get_team_state(team_id: str):
+def get_team_state(team_id: str, api_key: str = Depends(verify_team_api_key)):  # api_key is used by the dependency for authorization
     """Get the state of a specific team."""
     try:
         return game_state.get_team_state(team_id)
@@ -184,7 +303,7 @@ def get_team_state(team_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 @app.post("/teams/{team_id}/edit-name")
-def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None):
+def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None, api_key: str = Depends(verify_team_api_key)):  # api_key is used by the dependency for authorization
     """Edit a team's name, enforcing uniqueness and appropriateness."""
     try:
         team = game_state.team_manager.edit_team_name(team_id, request.new_name)
@@ -228,7 +347,14 @@ async def calculate_growth(data: Dict[Any, Any]):
             "next_capital": results["K_next"]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the detailed error for server-side debugging
+        import traceback
+        logger = logging.getLogger("app")
+        logger.error(f"Error in calculate_growth: {str(e)}")
+        logger.error(traceback.format_exc())
+
+        # Return a generic error message to the client
+        raise HTTPException(status_code=500, detail={"error": "An internal server error occurred"})
 
 # Results and visualization endpoints
 @app.get("/results/rankings")
@@ -237,7 +363,7 @@ def get_rankings():
     return game_state.rankings_manager.rankings
 
 @app.get("/results/visualizations/{team_id}")
-def get_team_visualizations(team_id: str):
+def get_team_visualizations(team_id: str, api_key: str = Depends(verify_team_api_key)):  # api_key is used by the dependency for authorization
     """Get visualization data for a specific team."""
     try:
         return game_state.get_team_visualizations(team_id)

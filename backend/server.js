@@ -26,14 +26,21 @@ const port = process.env.PORT || 4000;
 const modelApiUrl = process.env.MODEL_API_URL || 'http://model:8000';
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS || 'http://localhost:3000';
+const originsArray = allowedOrigins.split(',');
+
+app.use(cors({
+  origin: originsArray,
+  credentials: true
+}));
 app.use(express.json());
 
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: originsArray,
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
