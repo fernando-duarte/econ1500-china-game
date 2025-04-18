@@ -22,7 +22,24 @@
   - Event triggers and handlers are coordinated in [`game_state.py`](../china-growth-game/economic-model/game_state.py) and [`events_manager.py`](../china-growth-game/economic-model/events_manager.py).
   - Example: `advance_round` triggers event effects via [`_apply_event_effects`](../china-growth-game/economic-model/game_state.py#L85).
 - **Diagram**
-  - ![Event Flow Diagram](TODO: Add diagram or mermaid chart here)
+  - ```mermaid
+    graph TD
+      A[UI Action] --> B[Backend API]
+      B --> C[Game State]
+      C --> D[Events Manager]
+      D -->|WTO Event| E[Apply Event Effects]
+      D -->|GFC Event| E
+      D -->|Trade War| E
+      D -->|COVID-19| E
+      E --> F[Update Economic Model]
+      F --> G[Calculate New State]
+      G --> H[Emit Results]
+      H --> I[UI Update]
+      C --> J[Round Completion]
+      J --> K[Prize Calculation]
+      K --> L[Update Leaderboard]
+      L --> I
+    ```
 
 ## 3. Edge Cases & Fault Injection
 - **Duplicate Events**
@@ -30,10 +47,12 @@
 - **Concurrency**
   - Prize logic and state updates use in-memory and DB checks to prevent double-awards. See [`GameState.advance_round`](../china-growth-game/economic-model/game_state.py#L172).
 - **Fault Injection**
-  - Add tests to simulate duplicate events, network failures, and race conditions. (TODO: Link to test suite when available.)
+  - See [`server.test.js`](../backend/server.test.js) for tests that simulate duplicate event handling, verifying that events are only processed once even when sent multiple times.
+  - Test cases cover: duplicate team updates, duplicate game start events, and duplicate round progression.
 
 ## References
 - [`team_management.py`](../china-growth-game/economic-model/team_management.py)
 - [`game_state.py`](../china-growth-game/economic-model/game_state.py)
 - [`events_manager.py`](../china-growth-game/economic-model/events_manager.py)
-- [`app.py` API endpoints](../china-growth-game/economic-model/app.py) 
+- [`app.py` API endpoints](../china-growth-game/economic-model/app.py)
+- [`server.test.js`](../backend/server.test.js) 
