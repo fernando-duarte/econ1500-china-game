@@ -9,8 +9,8 @@ from typing import Dict, Any
 
 def calculate_next_round(
     current_state: Dict[str, float],
-    student_inputs: Dict[str, Any],
     parameters: Dict[str, float],
+    student_inputs: Dict[str, Any],
     year: int
 ) -> Dict[str, float]:
     """
@@ -18,8 +18,8 @@ def calculate_next_round(
 
     Args:
         current_state: Current values for {'K', 'L', 'H', 'A'}.
-        student_inputs: Student choices for this round {'s', 'e_policy'}.
         parameters: Model parameters including Solow and NX parameters.
+        student_inputs: Student choices for this round {'s', 'e_policy'} or {'savings_rate', 'exchange_rate_policy'}.
         year: Current year for the round.
 
     Returns:

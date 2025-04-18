@@ -438,18 +438,36 @@ def calculate_single_round(
     Args:
         current_state: Current values for {'K', 'L', 'H', 'A'}.
         parameters: Model parameters including Solow and NX parameters.
-        student_inputs: Student choices for this round {'savings_rate', 'exchange_rate_policy'}.
+        student_inputs: Student choices for this round {'savings_rate'/'s', 'exchange_rate_policy'/'e_policy'}.
         year: Current year for the round.
 
     Returns:
         Dictionary containing next round state and current round calculations.
     """
+    # Get savings rate from student_inputs, supporting both key naming formats
+    savings_rate = None
+    if 'savings_rate' in student_inputs:
+        savings_rate = student_inputs['savings_rate']
+    elif 's' in student_inputs:
+        savings_rate = student_inputs['s']
+    else:
+        raise KeyError("Missing savings rate in student inputs (neither 'savings_rate' nor 's' found)")
+
+    # Get exchange rate policy from student_inputs, supporting both key naming formats
+    exchange_rate_policy = None
+    if 'exchange_rate_policy' in student_inputs:
+        exchange_rate_policy = student_inputs['exchange_rate_policy']
+    elif 'e_policy' in student_inputs:
+        exchange_rate_policy = student_inputs['e_policy']
+    else:
+        raise KeyError("Missing exchange rate policy in student inputs (neither 'exchange_rate_policy' nor 'e_policy' found)")
+
     # Use the internal step calculation function with student inputs
     return _calculate_step(
         current_state=current_state,
         parameters=parameters,
-        savings_rate=student_inputs['savings_rate'],
-        exchange_rate_policy=student_inputs['exchange_rate_policy'],
+        savings_rate=savings_rate,
+        exchange_rate_policy=exchange_rate_policy,
         year=year
     )
 
