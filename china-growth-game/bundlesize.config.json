@@ -1,0 +1,27 @@
+{
+  "files": [
+    {
+      "path": "build/static/js/main.*.js",
+      "maxSize": "150kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "build/static/css/main.*.css",
+      "maxSize": "50kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "build/static/js/chunk-*.js",
+      "maxSize": "100kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "build/static/media/*.{png,jpg,jpeg,gif,svg}",
+      "maxSize": "200kB"
+    },
+    {
+      "path": "build/static/media/*.{woff,woff2,eot,ttf,otf}",
+      "maxSize": "50kB"
+    }
+  ]
+} 

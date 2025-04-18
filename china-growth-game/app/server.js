@@ -1,147 +1,118 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
-
 const EconomicModelService = require('./services/economic-model-service');
-
-// Import routes
-const gameRoutes = require('./routes/game-routes');
-const teamRoutes = require('./routes/team-routes');
-const resultsRoutes = require('./routes/results-routes');
 
 // Initialize services
 const economicModelService = new EconomicModelService();
 
-// Initialize Express app
+// Create a minimal Express app
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: ['http://localhost:3001'], // Allow React development server
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
 
-// Middleware
-app.use(cors({
-  origin: ['http://localhost:3001'], // Allow React development server
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
-}));
+// Body parser middleware
 app.use(express.json());
 
-// Health check endpoints
+// Simple health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
+// Simple API endpoint
+app.get('/api/hello', (req, res) => {
+  res.status(200).json({ message: 'Hello, world!' });
 });
 
-app.get('/api/economic-model/health', async (req, res) => {
+// Model health check
+app.get('/api/model/health', async (req, res) => {
   try {
-    const result = await economicModelService.healthCheck();
-    res.status(200).json({ status: 'ok', message: result.message });
+    const health = await economicModelService.healthCheck();
+    res.status(200).json(health);
   } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Could not connect to economic model' });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
-// API routes
-app.use('/api/game', gameRoutes);
-app.use('/api/teams', teamRoutes);
-app.use('/api/results', resultsRoutes);
+// Game routes
+app.get('/api/game', async (req, res) => {
+  try {
+    const gameState = await economicModelService.getGameState();
+    res.status(200).json({ success: true, game: gameState });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
-// Serve static files from the React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../build')));
-  
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
-  });
-} else {
-  // In development, serve the public directory
-  app.use(express.static(path.join(__dirname, 'public')));
-}
+app.post('/api/game/start', async (req, res) => {
+  try {
+    const result = await economicModelService.startGame();
+    res.status(200).json({ success: true, game: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
-  
-  // Send initial game state to new clients
-  economicModelService.getGameState()
-    .then(gameState => {
-      socket.emit('gameState', gameState);
-    })
-    .catch(error => {
-      console.error('Failed to get initial game state:', error.message);
-    });
-  
-  // Handle team creation
-  socket.on('createTeam', async (teamName) => {
-    try {
-      const team = await economicModelService.createTeam(teamName);
-      io.emit('teamCreated', team);
-      
-      // Update all clients with new game state
-      const gameState = await economicModelService.getGameState();
-      io.emit('gameState', gameState);
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to create team', error: error.message });
+app.post('/api/game/advance', async (req, res) => {
+  try {
+    const result = await economicModelService.advanceRound();
+    res.status(200).json({ success: true, game: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Team routes
+app.get('/api/teams', async (req, res) => {
+  try {
+    const gameState = await economicModelService.getGameState();
+    res.status(200).json({ success: true, teams: gameState.teams });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/teams', async (req, res) => {
+  try {
+    const { name } = req.body;
+    const team = await economicModelService.createTeam(name);
+    res.status(201).json({ success: true, team });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/api/teams/:teamId', async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const gameState = await economicModelService.getGameState();
+    const team = gameState.teams.find(t => t.id === teamId);
+    
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'Team not found' });
     }
-  });
-  
-  // Handle team decision submission
-  socket.on('submitDecision', async ({ teamId, savingsRate, exchangeRatePolicy }) => {
-    try {
-      const decision = await economicModelService.submitDecision(
-        teamId,
-        savingsRate,
-        exchangeRatePolicy
-      );
-      socket.emit('decisionSubmitted', decision);
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to submit decision', error: error.message });
-    }
-  });
-  
-  // Handle game state changes (for professor)
-  socket.on('startGame', async () => {
-    try {
-      const gameState = await economicModelService.startGame();
-      io.emit('gameStarted', gameState);
-      io.emit('gameState', gameState);
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to start game', error: error.message });
-    }
-  });
-  
-  socket.on('advanceRound', async () => {
-    try {
-      const result = await economicModelService.advanceRound();
-      io.emit('roundAdvanced', result);
-      
-      // Update all clients with new game state
-      const gameState = await economicModelService.getGameState();
-      io.emit('gameState', gameState);
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to advance round', error: error.message });
-    }
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
+    
+    res.status(200).json({ success: true, team });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/teams/:teamId/decisions', async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { savingsRate, exchangeRatePolicy } = req.body;
+    
+    const decision = await economicModelService.submitDecision(
+      teamId,
+      savingsRate,
+      exchangeRatePolicy
+    );
+    
+    res.status(201).json({ success: true, decision });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 

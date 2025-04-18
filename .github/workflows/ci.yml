@@ -22,6 +22,26 @@ jobs:
         run: cd frontend && npx prettier --check "src/**/*.{js,jsx,ts,tsx}"
       - name: Test frontend
         run: cd frontend && npm test -- --watchAll=false
+      
+      # Bundle size analysis
+      - name: Analyze bundle size
+        run: cd frontend && npm run build && npx bundlesize
+      
+      # Performance budgets
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli
+      - name: Build frontend for Lighthouse
+        run: cd frontend && npm run build
+      - name: Run Lighthouse CI
+        run: |
+          lhci autorun --collect.url=http://localhost:3000 \
+            --collect.staticDistDir=./frontend/build \
+            --collect.settings.preset=desktop \
+            --assert.preset=lighthouse:recommended \
+            --assert.assertions.resource-summary:document:size=<=250KB \
+            --assert.assertions.largest-contentful-paint=<=1500 \
+            --assert.assertions.first-contentful-paint=<=1000
+            
       # Lint, format, and test JS (backend)
       - name: Install backend dependencies
         run: cd backend && npm install

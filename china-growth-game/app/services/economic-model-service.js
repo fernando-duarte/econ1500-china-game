@@ -1,30 +1,93 @@
-const axios = require('axios');
-
+/**
+ * Service for communicating with the economic model microservice
+ * Simplified implementation for development
+ */
 class EconomicModelService {
-  constructor(baseUrl) {
-    this.baseUrl = baseUrl || process.env.ECONOMIC_MODEL_URL || 'http://localhost:8000';
-    this.client = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  constructor() {
+    console.log('Initializing EconomicModelService in mock mode');
+    // Mock data for development
+    this.mockGameState = {
+      teams: [],
+      current_round: 0,
+      current_year: 1980,
+      game_started: false,
+      game_ended: false
+    };
   }
 
   async healthCheck() {
-    try {
-      const response = await this.client.get('/health');
-      return response.data;
-    } catch (error) {
-      console.error('Economic model health check failed:', error.message);
-      throw error;
-    }
+    return { status: 'ok', message: 'Mock service running' };
+  }
+
+  async getGameState() {
+    return this.mockGameState;
+  }
+
+  async createTeam(teamName) {
+    const newTeam = {
+      id: `team-${Date.now()}`,
+      name: teamName || `Team ${Math.floor(Math.random() * 1000)}`,
+      created_at: new Date().toISOString(),
+      current_state: {
+        GDP: 306.2,
+        Capital: 800,
+        'Labor Force': 600,
+        'Human Capital': 1.0,
+        'Productivity (TFP)': 1.0,
+        'Net Exports': 3.6,
+        Consumption: 244.96
+      },
+      history: []
+    };
+    
+    this.mockGameState.teams.push(newTeam);
+    return newTeam;
+  }
+
+  async submitDecision(teamId, savingsRate, exchangeRatePolicy) {
+    const decision = {
+      team_id: teamId,
+      round: this.mockGameState.current_round,
+      savings_rate: savingsRate,
+      exchange_rate_policy: exchangeRatePolicy,
+      submitted_at: new Date().toISOString()
+    };
+    
+    return decision;
+  }
+
+  async startGame() {
+    this.mockGameState.game_started = true;
+    this.mockGameState.current_round = 1;
+    this.mockGameState.current_year = 1985;
+    
+    return this.mockGameState;
+  }
+
+  async advanceRound() {
+    this.mockGameState.current_round += 1;
+    this.mockGameState.current_year += 5;
+    
+    // Simulate updating all teams
+    this.mockGameState.teams.forEach(team => {
+      // Simulate 3% growth
+      team.current_state.GDP *= 1.03;
+      team.current_state.Capital *= 1.02;
+      team.current_state['Labor Force'] *= 1.01;
+      team.current_state['Human Capital'] *= 1.01;
+      team.current_state['Productivity (TFP)'] *= 1.01;
+      
+      // Add to history
+      team.history.push({...team.current_state, round: this.mockGameState.current_round - 1});
+    });
+    
+    return this.mockGameState;
   }
 
   // Legacy method for backward compatibility
   async runSimulation(simulationData) {
     try {
-      const response = await this.client.post('/simulate', simulationData);
+      const response = await axios.post(`${this.baseUrl}/simulate`, simulationData);
       return response.data;
     } catch (error) {
       console.error('Economic model simulation failed:', error.message);
@@ -35,7 +98,7 @@ class EconomicModelService {
   // Game flow methods
   async initializeGame() {
     try {
-      const response = await this.client.post('/game/init');
+      const response = await axios.post(`${this.baseUrl}/game/init`);
       return response.data;
     } catch (error) {
       console.error('Failed to initialize game:', error.message);
@@ -43,64 +106,10 @@ class EconomicModelService {
     }
   }
 
-  async startGame() {
-    try {
-      const response = await this.client.post('/game/start');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to start game:', error.message);
-      throw error;
-    }
-  }
-
-  async advanceRound() {
-    try {
-      const response = await this.client.post('/game/next-round');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to advance round:', error.message);
-      throw error;
-    }
-  }
-
-  async getGameState() {
-    try {
-      const response = await this.client.get('/game/state');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get game state:', error.message);
-      throw error;
-    }
-  }
-
   // Team management methods
-  async createTeam(teamName = null) {
-    try {
-      const response = await this.client.post('/teams/create', { team_name: teamName });
-      return response.data;
-    } catch (error) {
-      console.error('Failed to create team:', error.message);
-      throw error;
-    }
-  }
-
-  async submitDecision(teamId, savingsRate, exchangeRatePolicy) {
-    try {
-      const response = await this.client.post('/teams/decisions', {
-        team_id: teamId,
-        savings_rate: savingsRate,
-        exchange_rate_policy: exchangeRatePolicy
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Failed to submit decision:', error.message);
-      throw error;
-    }
-  }
-
   async getTeamState(teamId) {
     try {
-      const response = await this.client.get(`/teams/${teamId}`);
+      const response = await axios.get(`${this.baseUrl}/teams/${teamId}`);
       return response.data;
     } catch (error) {
       console.error(`Failed to get team state for ${teamId}:`, error.message);
@@ -111,7 +120,7 @@ class EconomicModelService {
   // Results and visualization methods
   async getRankings() {
     try {
-      const response = await this.client.get('/results/rankings');
+      const response = await axios.get(`${this.baseUrl}/results/rankings`);
       return response.data;
     } catch (error) {
       console.error('Failed to get rankings:', error.message);
@@ -121,7 +130,7 @@ class EconomicModelService {
 
   async getTeamVisualizations(teamId) {
     try {
-      const response = await this.client.get(`/results/visualizations/${teamId}`);
+      const response = await axios.get(`${this.baseUrl}/results/visualizations/${teamId}`);
       return response.data;
     } catch (error) {
       console.error(`Failed to get visualizations for team ${teamId}:`, error.message);
