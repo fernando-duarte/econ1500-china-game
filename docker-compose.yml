@@ -1,8 +1,22 @@
 version: "3.8"
 
+# Common configuration for all services
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - solow-network
+
+# Common healthcheck configuration
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
 services:
   frontend:
-    build: 
+    <<: *service-defaults
+    build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
@@ -21,17 +35,12 @@ services:
       - REACT_APP_API_URL=http://localhost:4000
       - REACT_APP_WS_URL=ws://localhost:4000
     healthcheck:
+      <<: *healthcheck-defaults
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
-    networks:
-      - solow-network
 
   backend:
-    build: 
+    <<: *service-defaults
+    build:
       context: ./backend
       dockerfile: Dockerfile
       args:
@@ -50,17 +59,12 @@ services:
       - PORT=4000
       - MODEL_API_URL=http://model:8000
     healthcheck:
+      <<: *healthcheck-defaults
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
-    networks:
-      - solow-network
 
   model:
-    build: 
+    <<: *service-defaults
+    build:
       context: ./model
       dockerfile: Dockerfile
       args:
@@ -75,14 +79,8 @@ services:
       - PYTHONUNBUFFERED=1
       - MODEL_ENV=development
     healthcheck:
+      <<: *healthcheck-defaults
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
-    networks:
-      - solow-network
 
 networks:
   solow-network:
@@ -90,8 +88,8 @@ networks:
 
 volumes:
   frontend_node_modules:
-    name: solow-game-frontend-modules
+    name: solow-game-frontend-modules-${ENV_SUFFIX:-dev}
   backend_node_modules:
-    name: solow-game-backend-modules
+    name: solow-game-backend-modules-${ENV_SUFFIX:-dev}
   model_python_deps:
-    name: solow-game-model-deps 
+    name: solow-game-model-deps-${ENV_SUFFIX:-dev}

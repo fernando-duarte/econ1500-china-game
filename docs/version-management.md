@@ -1,190 +1,91 @@
 # Version Management
 
-This document serves as the single source of truth for all version information in the China Growth Game project.
+This document describes how to manage versions in the project.
 
-## Version Management Philosophy
+## Overview
 
-The project follows these principles for version management:
+All version information is stored in a single source of truth: `versions.yaml`.
+This file is used to generate all other version-specific files.
 
-1. **Single Source of Truth**: All version information is centralized in the `version-management.js` file
-2. **Exact Version Pinning**: All dependencies use exact version numbers (no ^ or ~ prefixes)
-3. **Immutable Environments**: Development, testing, and production environments use identical versions
-4. **Consistent Tooling**: Node.js and Python versions are standardized across all components
-5. **Automated Validation**: Version consistency is automatically validated in CI/CD pipelines
+## Current Versions
 
-## Core Technologies
+### Core Technologies
 
-| Technology | Version | Used In |
-|------------|---------|---------|
-| Node.js    | 20.13.1 | Frontend, Backend |
-| Python     | 3.12.2 | Economic Model |
-| Docker     | 26.1.4  | Deployment |
+| Technology | Version |
+|------------|---------|
+| Node.js    | 20.13.1 |
+| Python     | 3.12.2 |
+| Docker     | 26.1.4 |
 
-## Frontend Dependencies
+### Frontend Dependencies
 
-| Package       | Version | Description |
-|---------------|---------|-------------|
-| React         | 18.2.0 | UI library |
-| Material UI   | 5.15.14 | Component library |
-| Chart.js      | 4.4.3 | Data visualization |
-| socket.io-client | 4.7.5 | Real-time communication |
+| Package       | Version |
+|---------------|---------|
+| React         | 18.2.0 |
+| Material UI   | 5.15.14 |
+| Chart.js      | 4.4.3 |
+| Socket.IO Client | 4.7.5 |
+| Axios         | 1.8.4 |
 
-## Backend Dependencies
+### Backend Dependencies
 
-| Package    | Version | Description |
-|------------|---------|-------------|
-| Express    | 5.1.0 | Web framework |
-| Socket.IO  | 4.7.5 | Real-time server |
-| Axios      | 1.8.4   | HTTP client |
-| Cors       | 2.8.5   | CORS middleware |
+| Package    | Version |
+|------------|---------|
+| Express    | 5.1.0 |
+| Socket.IO  | 4.7.5 |
+| AWS SDK    | 2.1571.0 |
+| Node Vault | 0.10.2 |
+| Axios      | 1.8.4 |
 
-## Economic Model Dependencies
+### Model Dependencies
 
-| Package    | Version | Description |
-|------------|---------|-------------|
-| FastAPI    | 0.115.12 | API framework |
-| Uvicorn    | 0.34.1 | ASGI server |
-| NumPy      | 1.26.4 | Numerical computing |
-| Pandas     | 2.2.3 | Data analysis |
-| Matplotlib | 3.9.4   | Data visualization |
-| Pydantic   | 2.11.3  | Data validation |
+| Package    | Version |
+|------------|---------|
+| FastAPI    | 0.115.12 |
+| Uvicorn    | 0.34.1 |
+| NumPy      | 1.26.4 |
+| Pandas     | 2.2.3 |
+| Matplotlib | 3.9.4 |
+| Pydantic   | 2.11.3 |
 
-## China Growth Game Component
+### Docker Images
 
-| Package    | Version | Description |
-|------------|---------|-------------|
-| Express    | 4.21.2  | Web framework |
-| Material UI| 5.12.3  | Component library |
-| FastAPI    | 0.110.0 | API framework |
-| Uvicorn    | 0.27.1  | ASGI server |
-| Pandas     | 2.2.2   | Data analysis |
+| Image     | Version |
+|-----------|---------|
+| Frontend  | 1.1.0 |
+| Backend   | 1.1.0 |
+| Model     | 1.1.0 |
 
-## Version Management Tools
+## Updating Versions
 
-The project includes several tools to help manage versions:
-
-### 1. Centralized Version Definition
-
-The `version-management.js` file serves as the programmatic source of truth for all version information:
-
-```javascript
-// Example of version-management.js
-module.exports = {
-  core: {
-    node: '20.13.1',
-    python: '3.12.2',
-    // ...
-  },
-  // ...
-};
-```
-
-### 2. Version Update Script
-
-The `scripts/update-versions.js` script updates version information across the codebase:
+To update a version, use the provided script:
 
 ```bash
-# Update all version information
-node scripts/update-versions.js
+./scripts/update-version.sh <component> <package> <version>
 ```
 
-### 3. Python Requirements Generator
-
-The `scripts/generate-python-locks.sh` script generates `requirements.lock` files from `requirements.txt`:
-
+Example:
 ```bash
-# Generate requirements.lock files
-./scripts/generate-python-locks.sh
+./scripts/update-version.sh frontend react 18.2.0
 ```
 
-### 4. Version Validation Script
+This will:
+1. Update the version in `versions.yaml`
+2. Regenerate all derived files:
+   - `version-management.js`
+   - `docker/image-versions.env`
+   - `model/requirements.txt`
+   - etc.
 
-The `scripts/validate-versions.js` script validates version consistency:
+## Generated Files
 
-```bash
-# Validate version consistency
-node scripts/validate-versions.js
-```
+The following files are automatically generated from `versions.yaml`:
 
-## Version Update Process
+- `version-management.js` - JavaScript module for Node.js applications
+- `docker/image-versions.env` - Environment variables for Docker
+- `model/requirements.txt` - Python dependencies
+- `china-growth-game/economic-model/requirements.txt` - Python dependencies for China Growth Game
 
-Follow these steps when updating versions:
+**Important:** Do not edit these files directly. Always edit `versions.yaml` instead.
 
-1. **Update the Central Definition**:
-   - Edit `version-management.js` with the new version information
-   - Update this document with the new versions
-   - Document any breaking changes or compatibility issues
-
-2. **Run the Update Script**:
-   ```bash
-   node scripts/update-versions.js
-   ```
-
-3. **Generate Python Lock Files**:
-   ```bash
-   ./scripts/generate-python-locks.sh
-   ```
-
-4. **Validate Version Consistency**:
-   ```bash
-   node scripts/validate-versions.js
-   ```
-
-5. **Test the Changes**:
-   ```bash
-   # Run all tests
-   npm test
-   
-   # Build and test with Docker
-   docker-compose build
-   docker-compose up -d
-   # Run integration tests
-   ```
-
-6. **Update the Changelog**:
-   - Document the version changes in `CHANGELOG.md`
-
-7. **Commit and Push**:
-   ```bash
-   git add .
-   git commit -m "Update dependencies to latest versions"
-   git push
-   ```
-
-## Version Compatibility Rules
-
-- Frontend and Backend must use the same Socket.IO version
-- Economic Model must use FastAPI, NumPy, and Pandas versions that are compatible with Python 3.12.2
-- All Node.js packages must be compatible with Node.js 20.13.1
-- China Growth Game component may use different versions than the main components, but these should be aligned in future releases
-
-## Version Compatibility Matrix
-
-| Component | Node.js | Python | React | Express | FastAPI |
-|-----------|---------|--------|-------|---------|------------|
-| Frontend  | 20.13.1 | -      | 18.2.0| -       | -          |
-| Backend   | 20.13.1 | -      | -     | 5.1.0   | -          |
-| Model     | -       | 3.12.2 | -     | -       | 0.115.12   |
-| China Game| 20.13.1 | 3.12.2 | 18.2.0| 4.21.2  | 0.110.0    |
-
-## Managing Docker Images
-
-- All Docker images use the standardized versions defined in docker/image-versions.env
-- Production images use the same base versions with a "-prod" suffix
-- Volume names follow the pattern "solow-game-[component]-[resource]-[env]"
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Version Mismatch in Docker**:
-   - Check `docker/image-versions.env` and Dockerfiles
-   - Ensure Docker Compose is using the correct environment variables
-
-2. **Python Dependency Conflicts**:
-   - Check for conflicts between dependencies in `requirements.lock`
-   - Consider using a tool like `pip-tools` for more advanced dependency resolution
-
-3. **Node.js Dependency Conflicts**:
-   - Check for peer dependency warnings in `npm install` output
-   - Use `npm ls <package>` to check for multiple versions of the same package
+_Last updated: 2025-04-18_

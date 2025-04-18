@@ -1,3 +1,6 @@
+# Auto-generated from versions.yaml
+# DO NOT EDIT DIRECTLY
+
 fastapi==0.110.0
 uvicorn==0.27.1
 numpy==1.26.4

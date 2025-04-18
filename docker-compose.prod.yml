@@ -1,5 +1,8 @@
+version: "3.8"
+
 services:
   frontend:
+    <<: *service-defaults
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
@@ -10,22 +13,48 @@ services:
       - "80:80"
     depends_on:
       - model
-    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=https://api.example.com
+      - REACT_APP_WS_URL=wss://api.example.com
+    volumes: []  # No volumes in production
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 512M
     healthcheck:
+      <<: *healthcheck-defaults
       test: ["CMD", "curl", "--fail", "http://localhost:80", "||", "exit", "1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
       start_period: 5s
-    networks:
-      - solow-network
+
+  backend:
+    <<: *service-defaults
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    image: ${BACKEND_IMAGE}:${BACKEND_VERSION}-prod
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - MODEL_API_URL=http://model:8000
+    volumes: []  # No volumes in production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 768M
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "curl", "--fail", "http://localhost:4000/health", "||", "exit", "1"]
+      start_period: 5s
 
   model:
+    <<: *service-defaults
     build:
       context: ./model
       dockerfile: Dockerfile.prod
@@ -34,20 +63,19 @@ services:
     image: ${MODEL_IMAGE}:${MODEL_VERSION}-prod
     ports:
       - "8000:8000"
-    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_ENV=production
+    volumes: []  # No volumes in production
     deploy:
       resources:
         limits:
           cpus: '1.0'
           memory: 1G
     healthcheck:
+      <<: *healthcheck-defaults
       test: ["CMD", "curl", "--fail", "http://localhost:8000/health", "||", "exit", "1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
       start_period: 5s
-    networks:
-      - solow-network
 
 networks:
   solow-network:
@@ -62,4 +90,4 @@ volumes:
     name: solow-game-model-deps-prod
   model_data:
     name: solow_game_model_data_prod
-    driver: local 
+    driver: local

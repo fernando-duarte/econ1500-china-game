@@ -1,0 +1,37 @@
+# Base Backend Dockerfile Template
+# Auto-generated from template - DO NOT EDIT DIRECTLY
+ARG NODE_VERSION=${NODE_VERSION}
+FROM node:${NODE_VERSION}-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache ${SYSTEM_DEPENDENCIES}
+
+# Copy package files
+COPY ${PACKAGE_PATH}/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy application code
+COPY ${APP_PATH} .
+
+# Create a non-root user
+ARG CREATE_USER=${CREATE_USER}
+RUN if [ "$CREATE_USER" = "true" ]; then \
+    addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app && \
+    USER appuser; \
+    fi
+
+# Expose port
+EXPOSE ${PORT}
+
+# Health check
+ARG INCLUDE_HEALTHCHECK=${INCLUDE_HEALTHCHECK}
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
+
+# Start command
+CMD ${START_COMMAND}

@@ -1,23 +1,23 @@
 # Base Python Model Dockerfile Template
 # Auto-generated from template - DO NOT EDIT DIRECTLY
-ARG PYTHON_VERSION=3.12.2
-FROM python:3.12.2-slim
+ARG PYTHON_VERSION=${PYTHON_VERSION}
+FROM python:${PYTHON_VERSION}-slim
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    ${SYSTEM_DEPENDENCIES} \
     && rm -rf /var/lib/apt/lists/*
 
 # User setup (optional for development)
-ARG CREATE_USER=false
+ARG CREATE_USER=${CREATE_USER}
 RUN if [ "$CREATE_USER" = "true" ]; then \
     groupadd -r appuser && useradd -r -g appuser appuser; \
     fi
 
 # Python environment setup
-ARG USE_VENV=true
+ARG USE_VENV=${USE_VENV}
 RUN if [ "$USE_VENV" = "true" ]; then \
     python -m venv .venv && \
     echo 'PATH="/app/.venv/bin:$PATH"' >> /etc/environment; \
@@ -25,15 +25,15 @@ RUN if [ "$USE_VENV" = "true" ]; then \
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy requirements
-COPY ./requirements.txt .
-COPY ./requirements.lock .
+COPY ${REQUIREMENTS_PATH}/requirements.txt .
+COPY ${REQUIREMENTS_PATH}/requirements.lock .
 
 # Install dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.lock
 
 # Copy application code
-COPY . .
+COPY ${APP_PATH} .
 
 # Set permissions if using non-root user
 RUN if [ "$CREATE_USER" = "true" ]; then \
@@ -42,12 +42,12 @@ RUN if [ "$CREATE_USER" = "true" ]; then \
     fi
 
 # Expose port
-EXPOSE 8000
+EXPOSE ${PORT}
 
 # Health check
-ARG INCLUDE_HEALTHCHECK=false
+ARG INCLUDE_HEALTHCHECK=${INCLUDE_HEALTHCHECK}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
 # Start command
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ${START_COMMAND}
