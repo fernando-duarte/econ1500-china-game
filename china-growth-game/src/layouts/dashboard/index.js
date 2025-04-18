@@ -35,6 +35,10 @@ import reportsLineChartData from "layouts/dashboard/data/reportsLineChartData";
 import Projects from "layouts/dashboard/components/Projects";
 import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
 
+// Refactor: Move leaderboard, round controls, and pause/restart logic into separate modules/components.
+// Add: Real-time leaderboard, round controls, and pause/restart buttons.
+// Refactor: Import reusable components from material-dashboard-react-main instead of duplicating code.
+
 function Dashboard() {
   const { sales, tasks } = reportsLineChartData;
 

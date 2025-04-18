@@ -3,7 +3,21 @@ const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const axios = require('axios');
-require('dotenv').config();
+require('dotenv').config(); // For local/dev only. Do NOT use .env for production secrets.
+
+// --- Secure Secrets Management Stub ---
+// In production, use a secure secrets manager (e.g., AWS Secrets Manager, HashiCorp Vault)
+// Example (pseudo-code):
+// const { getSecret } = require('./secretsManager');
+// async function getDbPassword() {
+//   if (process.env.NODE_ENV === 'production') {
+//     return await getSecret('dbPassword');
+//   } else {
+//     return process.env.DB_PASSWORD;
+//   }
+// }
+// See README for details.
+// --- End Secure Secrets Management Stub ---
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +43,13 @@ let gameState = {
   timer: 300, // 5 minutes per round
   isRunning: false,
   teams: {}
+};
+
+// Idempotency state
+const lastProcessed = {
+  updateTeam: {}, // teamId: round
+  startGame: null,
+  nextRound: null
 };
 
 // Socket.IO connection handling
@@ -60,44 +81,51 @@ io.on('connection', (socket) => {
   // Handle team decisions
   socket.on('updateTeam', async (data) => {
     const { teamId, savingsRate, exchangeRate } = data;
-    
-    if (gameState.teams[teamId]) {
-      // Update team decisions
-      gameState.teams[teamId].savingsRate = savingsRate;
-      gameState.teams[teamId].exchangeRate = exchangeRate;
-      
-      // Broadcast updated state to team members
-      io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
-      
-      // Calculate economic outcomes
-      try {
-        const response = await axios.post(`${modelApiUrl}/calculate`, {
-          savings_rate: savingsRate,
-          capital: gameState.teams[teamId].capital,
-          labor: gameState.teams[teamId].labor,
-          exchange_rate: exchangeRate
-        });
+    // Idempotency: Only process if this round is new for this team
+    if (gameState.teams[teamId] && lastProcessed.updateTeam[teamId] !== gameState.round) {
+      lastProcessed.updateTeam[teamId] = gameState.round;
+      if (gameState.teams[teamId]) {
+        // Update team decisions
+        gameState.teams[teamId].savingsRate = savingsRate;
+        gameState.teams[teamId].exchangeRate = exchangeRate;
         
-        // Update team data with model results
-        const results = response.data;
-        gameState.teams[teamId].output = results.output;
-        gameState.teams[teamId].consumption = results.consumption;
-        gameState.teams[teamId].nextCapital = results.next_capital;
+        // Broadcast updated state to team members
+        io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
         
-        // Broadcast results to team
-        io.to(`team-${teamId}`).emit('calculationResults', results);
-      } catch (error) {
-        console.error('Error calculating economic outcomes:', error.message);
+        // Calculate economic outcomes
+        try {
+          const response = await axios.post(`${modelApiUrl}/calculate`, {
+            savings_rate: savingsRate,
+            capital: gameState.teams[teamId].capital,
+            labor: gameState.teams[teamId].labor,
+            exchange_rate: exchangeRate
+          });
+          
+          // Update team data with model results
+          const results = response.data;
+          gameState.teams[teamId].output = results.output;
+          gameState.teams[teamId].consumption = results.consumption;
+          gameState.teams[teamId].nextCapital = results.next_capital;
+          
+          // Broadcast results to team
+          io.to(`team-${teamId}`).emit('calculationResults', results);
+        } catch (error) {
+          console.error('Error calculating economic outcomes:', error.message);
+        }
       }
     }
   });
   
   // Professor control events
   socket.on('startGame', () => {
-    gameState.isRunning = true;
-    gameState.round = 1;
-    gameState.timer = 300;
-    io.emit('gameState', gameState);
+    // Idempotency: Only process if not already started
+    if (!gameState.isRunning && lastProcessed.startGame !== true) {
+      lastProcessed.startGame = true;
+      gameState.isRunning = true;
+      gameState.round = 1;
+      gameState.timer = 300;
+      io.emit('gameState', gameState);
+    }
   });
   
   socket.on('pauseGame', () => {
@@ -106,7 +134,9 @@ io.on('connection', (socket) => {
   });
   
   socket.on('nextRound', () => {
-    if (gameState.round < 10) {
+    // Idempotency: Only process if round is not already advanced
+    if (lastProcessed.nextRound !== gameState.round && gameState.round < 10) {
+      lastProcessed.nextRound = gameState.round;
       gameState.round++;
       gameState.timer = 300;
       
@@ -130,9 +160,8 @@ io.on('connection', (socket) => {
       });
       
       io.emit('gameState', gameState);
-    } else {
+    } else if (gameState.round >= 10 && !gameState.isRunning) {
       // End of game
-      gameState.isRunning = false;
       io.emit('gameEnd', calculateFinalScores());
     }
   });

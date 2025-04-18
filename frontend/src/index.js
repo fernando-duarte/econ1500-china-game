@@ -12,4 +12,10 @@ root.render(
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
-reportWebVitals(); 
+reportWebVitals();
+
+if (process.env.NODE_ENV !== 'production') {
+  import('@axe-core/react').then(axe => {
+    axe.default(React, ReactDOM, 1000);
+  });
+} 

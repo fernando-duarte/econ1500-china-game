@@ -32,6 +32,26 @@ import ReportsLineChart from "../../examples/Charts/LineCharts/ReportsLineChart"
 // Socket.io for real-time communication
 import io from "socket.io-client";
 
+// Refactor: Move state and handlers for group naming, decision controls, and event display into separate modules/components.
+// Add: Group naming modal with auto-generated fun, economic-themed names and confirmation step.
+// Add: Countdown timer component, previous round GDP growth, and current ranking display to dashboard.
+// Add: Breaking news/events component with initial and delayed numeric impact.
+// Add: Explicit confirmation dialog for decision submission.
+// Add: Pie chart for consumption vs. savings visualization.
+// Refactor: Import reusable components from material-dashboard-react-main instead of duplicating code.
+
+// --- Acceptance Criteria: Group Naming UI ---
+// - Auto-generated group names must be unique and pronounceable.
+// - Group names must be persisted to the DB (or backend state).
+// - UI must allow confirmation before finalizing the name.
+// --- End Acceptance Criteria ---
+
+// --- Acceptance Criteria: Prize Logic ---
+// - Prizes must be awarded based on clear, testable criteria (e.g., top GDP growth).
+// - Prize logic must be idempotent (no double-awards).
+// - Prize results must be visible in the dashboard and persisted.
+// --- End Acceptance Criteria ---
+
 function GameDashboard() {
   // State for game data
   const [gameState, setGameState] = useState(null);
