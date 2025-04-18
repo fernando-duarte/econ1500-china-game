@@ -1,0 +1,23 @@
+# Consolidated requirements for Python 3.12
+# Generated from both canonical and legacy model requirements
+
+# Web framework
+fastapi==0.110.0
+uvicorn==0.27.1
+
+# Data processing
+numpy==1.26.4
+pandas==2.2.2
+matplotlib==3.8.3
+
+# Utilities
+pydantic==2.6.3
+python-dotenv==1.0.1
+typing-extensions==4.10.0
+
+# Testing
+pytest==7.4.0
+
+# Additional dependencies from legacy model
+limiter==0.1.2
+requests==2.31.0
