@@ -212,7 +212,15 @@ def calculate_exchange_rate(year: int, e_policy: str) -> float:
 
     Returns:
         Exchange rate
+
+    Raises:
+        ValueError: If e_policy is not a valid policy
     """
+    # Validate policy
+    valid_policies = ['market', 'undervalue', 'overvalue']
+    if e_policy not in valid_policies:
+        raise ValueError(f"Exchange rate policy must be one of {valid_policies}, got {e_policy}")
+
     # Round index (0-based) from year
     round_index = max(0, (year - 1980) // 5)
     # Baseline market exchange rate (linear interpolation 1.5 to 7.0 over 10 rounds)
@@ -220,7 +228,7 @@ def calculate_exchange_rate(year: int, e_policy: str) -> float:
     e_market_t = E_1980 + (7.0 - E_1980) * round_index / (num_rounds - 1)
 
     # Determine actual exchange rate based on policy using the policy multipliers
-    multiplier = POLICY_MULTIPLIERS.get(e_policy, 1.0)
+    multiplier = POLICY_MULTIPLIERS[e_policy]  # Now we can safely use direct lookup
     return e_market_t * multiplier
 
 def calculate_foreign_income(year: int) -> float:
@@ -246,6 +254,8 @@ def calculate_openness_ratio(round_index: int) -> float:
     Returns:
         Openness ratio
     """
+    # Handle negative round indices by treating them as 0
+    round_index = max(0, round_index)
     return 0.1 + 0.02 * round_index
 
 def calculate_fdi_ratio(year: int) -> float:
@@ -428,7 +438,7 @@ def calculate_single_round(
     Args:
         current_state: Current values for {'K', 'L', 'H', 'A'}.
         parameters: Model parameters including Solow and NX parameters.
-        student_inputs: Student choices for this round {'s', 'e_policy'}.
+        student_inputs: Student choices for this round {'savings_rate', 'exchange_rate_policy'}.
         year: Current year for the round.
 
     Returns:
@@ -438,8 +448,8 @@ def calculate_single_round(
     return _calculate_step(
         current_state=current_state,
         parameters=parameters,
-        savings_rate=student_inputs['s'],
-        exchange_rate_policy=student_inputs['e_policy'],
+        savings_rate=student_inputs['savings_rate'],
+        exchange_rate_policy=student_inputs['exchange_rate_policy'],
         year=year
     )
 
