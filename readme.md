@@ -90,7 +90,18 @@ This project is an educational simulation that allows students to experience fir
 ## Installation & Setup
 
 1. Clone the repository
-2. Run the development environment startup script:
+2. Set up the Python virtual environment:
+
+```bash
+./setup-venv.sh
+```
+
+This script will:
+- Create a Python 3.12 virtual environment
+- Install all required dependencies
+- Set up symbolic links for model directories
+
+3. Run the development environment startup script:
 
 ```bash
 ./start-unified.sh
