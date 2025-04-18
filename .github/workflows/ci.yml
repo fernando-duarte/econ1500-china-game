@@ -11,8 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
+      # Load image versions from the same file used in local development
+      - name: Load image versions
+        run: |
+          chmod +x docker/load-versions.sh
+          source docker/load-versions.sh
+          # Export image versions as environment variables for GitHub Actions
+          echo "NODE_VERSION=$NODE_VERSION" >> $GITHUB_ENV
+          echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE=$FRONTEND_IMAGE" >> $GITHUB_ENV
+          echo "FRONTEND_VERSION=$FRONTEND_VERSION" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> $GITHUB_ENV
+          echo "BACKEND_VERSION=$BACKEND_VERSION" >> $GITHUB_ENV
+          echo "MODEL_IMAGE=$MODEL_IMAGE" >> $GITHUB_ENV
+          echo "MODEL_VERSION=$MODEL_VERSION" >> $GITHUB_ENV
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      
+      # Setup Docker-in-Docker for CI
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+      
       # Lint, format, and test JS (frontend)
       - name: Install frontend dependencies
         run: cd frontend && npm install
@@ -55,7 +78,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install Python dependencies
         run: |
           cd china-growth-game/economic-model
@@ -68,22 +91,77 @@ jobs:
         run: cd china-growth-game/economic-model && black --check .
       - name: Test Python
         run: cd china-growth-game/economic-model && pytest
-      # Existing Docker build steps
+        
+      # Build Docker images with the same versions as local development
       - name: Build frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          tags: solow-frontend:ci
+          tags: ${{ env.FRONTEND_IMAGE }}:${{ env.FRONTEND_VERSION }}
+          build-args: |
+            NODE_VERSION=${{ env.NODE_VERSION }}
           load: true
       - name: Build backend
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          tags: solow-backend:ci
+          tags: ${{ env.BACKEND_IMAGE }}:${{ env.BACKEND_VERSION }}
+          build-args: |
+            NODE_VERSION=${{ env.NODE_VERSION }}
           load: true
       - name: Build model
         uses: docker/build-push-action@v5
         with:
           context: ./model
-          tags: solow-model:ci
-          load: true 
+          tags: ${{ env.MODEL_IMAGE }}:${{ env.MODEL_VERSION }}
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+          load: true
+          
+      # Test with Docker Compose using the built images
+      - name: Create Docker network
+        run: docker network create solow-network || true
+        
+      - name: Start services with Docker Compose
+        run: |
+          docker-compose -f docker-compose.yml up -d
+          
+      - name: Wait for services to be healthy
+        run: |
+          # Wait for services to be healthy
+          timeout=120
+          echo "Waiting for services to be healthy (timeout: ${timeout}s)"
+          start_time=$(date +%s)
+          
+          while true; do
+            current_time=$(date +%s)
+            elapsed=$((current_time - start_time))
+            
+            if [ $elapsed -gt $timeout ]; then
+              echo "Timeout waiting for services to be healthy"
+              docker-compose logs
+              exit 1
+            fi
+            
+            # Check if all services are healthy
+            healthy_count=$(docker-compose ps --format json | grep -c '"Health": "healthy"')
+            service_count=$(docker-compose ps --format json | grep -c '"Service": ')
+            
+            if [ "$healthy_count" -eq "$service_count" ]; then
+              echo "All services are healthy!"
+              break
+            fi
+            
+            echo "Waiting for services to be healthy ($healthy_count/$service_count ready, elapsed: ${elapsed}s)"
+            sleep 5
+          done
+          
+      - name: Run integration tests with Docker environment
+        run: |
+          # Run tests against the Docker environment
+          cd tests
+          npm install
+          npm run test:integration
+          
+      - name: Stop Docker services
+        run: docker-compose down 

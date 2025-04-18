@@ -1,8 +1,13 @@
+version: "3.8"
+
 services:
   frontend:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    image: ${FRONTEND_IMAGE}:${FRONTEND_VERSION}
     ports:
       - "3000:3000"
     volumes:
@@ -29,6 +34,9 @@ services:
     build: 
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    image: ${BACKEND_IMAGE}:${BACKEND_VERSION}
     ports:
       - "4000:4000"
     volumes:
@@ -55,6 +63,9 @@ services:
     build: 
       context: ./model
       dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    image: ${MODEL_IMAGE}:${MODEL_VERSION}
     ports:
       - "8000:8000"
     volumes:

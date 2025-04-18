@@ -21,6 +21,7 @@ This project is an educational simulation that allows students to experience fir
 - [Secrets Management](app/config/secrets.js) - Secure storage for production credentials
 - [Feature Flags](app/config/featureFlags.js) - Feature toggling system for controlled rollouts
 - [Accessibility](src/components/common/AccessibilityProvider.jsx) - WCAG 2.1 AA compliance features
+- [Immutable Environments](docs/immutable-environments.md) - Ensuring consistent environments between development and CI
 
 ## Technology Stack
 
@@ -42,6 +43,7 @@ This project is an educational simulation that allows students to experience fir
 - Deterministic simulation replay for debugging
 - Automated CI pipeline with linting, formatting and testing
 - Performance budgets and monitoring
+- Immutable environments between CI and development
 
 ## Accessibility
 
@@ -60,58 +62,18 @@ This project is an educational simulation that allows students to experience fir
 
 ## Installation & Setup
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/username/china-growth-game.git
-   cd china-growth-game
-   ```
+1. Clone the repository
+2. Run the development environment startup script:
 
-2. Install dependencies:
-   ```
-   # Backend dependencies
-   npm install
-   
-   # Frontend dependencies
-   cd src && npm install
-   cd ..
-   
-   # Economic model dependencies
-   cd economic-model
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   cd ..
-   ```
+```bash
+./start-dev.sh
+```
 
-3. Set up environment:
-   Create a `.env` file in the project root with the following variables:
-   ```
-   PORT=3000
-   ECONOMIC_MODEL_URL=http://localhost:8000
-   NODE_ENV=development
-   ```
-
-4. Start the development servers:
-   ```
-   # Start all services with Docker Compose
-   docker-compose up
-   
-   # Or start services individually
-   # Backend
-   npm run dev
-   
-   # Frontend
-   npm run start:react
-   
-   # Economic Model
-   cd economic-model
-   uvicorn app:app --reload --port 8000
-   ```
-
-5. Access the application:
-   - Main application: http://localhost:3001
-   - Backend API: http://localhost:3000
-   - Economic model API: http://localhost:8000
+This script will:
+- Load consistent Docker image versions
+- Build and start all services
+- Wait for services to be healthy
+- Provide access information
 
 ## Deployment
 
