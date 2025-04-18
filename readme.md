@@ -66,7 +66,11 @@ This project is an educational simulation that allows students to experience fir
 
 ## Quality Assurance
 
-- Extensive test coverage for economic model
+- Comprehensive test suite for all components:
+  - Economic model: Unit tests, integration tests, and benchmark tests
+  - Backend: Unit tests, API tests, and Socket.IO tests
+  - Frontend: Component tests, context tests, and service tests
+- End-to-end tests for complete game flow
 - Deterministic simulation replay for debugging
 - Automated CI pipeline with linting, formatting and testing
 - Performance budgets and monitoring
@@ -112,6 +116,46 @@ This script will:
 - Build and start all services
 - Wait for services to be healthy
 - Provide access information
+
+## Running Tests
+
+Run all tests with the master test runner script:
+
+```bash
+./run_all_tests.sh
+```
+
+Or run tests for specific components:
+
+```bash
+# Run only economic model tests
+./run_all_tests.sh --model
+
+# Run only backend tests
+./run_all_tests.sh --backend
+
+# Run only frontend tests
+./run_all_tests.sh --frontend
+
+# Run tests with coverage reports
+./run_all_tests.sh --coverage
+```
+
+Component-specific test runners are also available:
+
+```bash
+# Economic model tests
+cd china-growth-game/economic-model
+python run_tests.py
+
+# Backend tests
+cd backend
+node run_tests.js
+
+# Frontend tests
+cd frontend
+node run_tests.js
+```
 
 ## Deployment
 
