@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2024-11-15
+
+### Added
+- Unified Docker configuration system
+  - Centralized Dockerfiles in docker/dockerfiles
+  - Unified docker-compose files for development and production
+  - Standardized environment variables in .env.example
+  - Added migration script for Docker configuration
+  - Created comprehensive Docker documentation
+- Improved Docker health checks for all services
+- Added resource limits for production containers
+- Support for running China Growth Game services alongside main application
+
+### Changed
+- Consolidated duplicate Docker configurations
+- Standardized Docker volume naming conventions
+- Improved Docker network configuration
+- Enhanced Docker security with non-root users
+
 ## [1.2.0] - 2024-11-08
 
 ### Added

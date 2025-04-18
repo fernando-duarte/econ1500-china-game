@@ -1,0 +1,139 @@
+version: "3.8"
+
+# Common configuration for all services
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - solow-network
+
+# Common healthcheck configuration
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+services:
+  # Main application services
+  frontend:
+    <<: *service-defaults
+    build: 
+      context: ./frontend
+      dockerfile: ${DOCKER_PATH:-docker}/Dockerfile.frontend
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    image: ${FRONTEND_IMAGE}:${FRONTEND_VERSION}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app:cached
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - REACT_APP_API_URL=http://localhost:${BACKEND_PORT:-4000}
+      - REACT_APP_WS_URL=ws://localhost:${BACKEND_PORT:-4000}
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+
+  backend:
+    <<: *service-defaults
+    build: 
+      context: ./backend
+      dockerfile: ${DOCKER_PATH:-docker}/Dockerfile.backend
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    image: ${BACKEND_IMAGE}:${BACKEND_VERSION}
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+    volumes:
+      - ./backend:/app:cached
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      model:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=4000
+      - MODEL_API_URL=http://model:8000
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+
+  model:
+    <<: *service-defaults
+    build: 
+      context: ./model
+      dockerfile: ${DOCKER_PATH:-docker}/Dockerfile.model
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    image: ${MODEL_IMAGE}:${MODEL_VERSION}
+    ports:
+      - "${MODEL_PORT:-8000}:8000"
+    volumes:
+      - ./model:/app:cached
+      - model_python_deps:/app/.venv
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_ENV=${NODE_ENV:-development}
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+
+  # China Growth Game services (optional, enabled via ENABLE_CHINA_GAME=true)
+  china-game-backend:
+    <<: *service-defaults
+    profiles: ["china-game"]
+    build:
+      context: ./china-growth-game
+      dockerfile: ${DOCKER_PATH:-docker}/Dockerfile.china-backend
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    ports:
+      - "${CHINA_BACKEND_PORT:-3001}:3000"
+    environment:
+      - PORT=3000
+      - ECONOMIC_MODEL_URL=http://china-game-model:8000
+      - NODE_ENV=${NODE_ENV:-development}
+    volumes:
+      - ./china-growth-game/app:/app/app
+    depends_on:
+      china-game-model:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+
+  china-game-model:
+    <<: *service-defaults
+    profiles: ["china-game"]
+    build:
+      context: ./china-growth-game
+      dockerfile: ${DOCKER_PATH:-docker}/Dockerfile.china-model
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    ports:
+      - "${CHINA_MODEL_PORT:-8001}:8000"
+    volumes:
+      - ./china-growth-game/economic-model:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_ENV=${NODE_ENV:-development}
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+
+networks:
+  solow-network:
+    driver: bridge
+
+volumes:
+  frontend_node_modules:
+    name: solow-game-frontend-modules-${ENV_SUFFIX:-dev}
+  backend_node_modules:
+    name: solow-game-backend-modules-${ENV_SUFFIX:-dev}
+  model_python_deps:
+    name: solow-game-model-deps-${ENV_SUFFIX:-dev}
