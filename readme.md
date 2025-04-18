@@ -61,8 +61,8 @@ This project is an educational simulation that allows students to experience fir
 
 ## Development Prerequisites
 
-- Node.js 20.x or later
-- Python 3.12 or later
+- Node.js 20.12.1 or later
+- Python 3.12.2 or later
 - Docker & Docker Compose
 
 ## Installation & Setup

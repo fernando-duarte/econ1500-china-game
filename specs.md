@@ -219,4 +219,3 @@ Results Visualizations:
 
 This specification provides thorough and explicit details designed to facilitate seamless implementation by any developer or system operator.
 
-## Proposed Versions (starting point, can use newer ones)
