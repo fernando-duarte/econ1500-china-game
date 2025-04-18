@@ -64,9 +64,13 @@ logs
 
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
+**/*.py[cod]
 *$py.class
+**/*$py.class
 *.so
+**/*.so
 .Python
 env/
 build/
@@ -82,8 +86,10 @@ sdist/
 var/
 wheels/
 *.egg-info/
+**/*.egg-info/
 .installed.cfg
 *.egg
+**/*.egg
 
 # pytest
 .pytest_cache/
