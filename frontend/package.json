@@ -3,13 +3,13 @@
   "version": "1.1.0",
   "description": "Frontend interface for China's Growth Game",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "analyze": "source-map-explorer 'build/static/js/*.js'",
-    "a11y": "echo 'Run axe accessibility checks in development mode'",
-    "preinstall": "npx npm-force-resolutions"
+    "start": "echo 'Redirecting to canonical implementation...' && cd ../china-growth-game && npm start",
+    "build": "echo 'Redirecting to canonical implementation...' && cd ../china-growth-game && npm run build",
+    "test": "echo 'Redirecting to canonical implementation...' && cd ../china-growth-game && npm test",
+    "eject": "echo 'DEPRECATED: Use the canonical implementation in china-growth-game instead'",
+    "analyze": "echo 'DEPRECATED: Use the canonical implementation in china-growth-game instead'",
+    "a11y": "echo 'DEPRECATED: Use the canonical implementation in china-growth-game instead'",
+    "preinstall": "echo 'DEPRECATED: Use the canonical implementation in china-growth-game instead'"
   },
   "dependencies": {
     "@emotion/react": "11.11.4",

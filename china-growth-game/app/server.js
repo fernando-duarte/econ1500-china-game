@@ -1,5 +1,29 @@
+/**
+ * Legacy Server Wrapper
+ *
+ * This file is a wrapper around the unified server implementation.
+ * It redirects to the unified server to maintain backward compatibility.
+ *
+ * For new development, use the unified-server.js directly.
+ */
+
 const express = require('express');
 const path = require('path');
+
+// Determine if we should run in legacy mode or redirect to unified server
+const LEGACY_MODE = process.env.LEGACY_MODE === 'true';
+
+if (!LEGACY_MODE) {
+  console.log('Running in redirect mode - forwarding to unified server');
+  // Load the unified server directly
+  require('../../../unified-server');
+  // This process will exit as the unified server takes over
+  process.exit(0);
+}
+
+// If we're here, we're running in legacy mode for backward compatibility
+console.log('Running in legacy mode - this is deprecated and will be removed in a future version');
+
 const EconomicModelService = require('./services/economic-model-service');
 
 // Initialize services
@@ -84,11 +108,11 @@ app.get('/api/teams/:teamId', async (req, res) => {
     const { teamId } = req.params;
     const gameState = await economicModelService.getGameState();
     const team = gameState.teams.find(t => t.id === teamId);
-    
+
     if (!team) {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
-    
+
     res.status(200).json({ success: true, team });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -99,13 +123,13 @@ app.post('/api/teams/:teamId/decisions', async (req, res) => {
   try {
     const { teamId } = req.params;
     const { savingsRate, exchangeRatePolicy } = req.body;
-    
+
     const decision = await economicModelService.submitDecision(
       teamId,
       savingsRate,
       exchangeRatePolicy
     );
-    
+
     res.status(201).json({ success: true, decision });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -117,7 +141,7 @@ const buildPath = path.join(__dirname, '..', 'build');
 if (require('fs').existsSync(buildPath)) {
   console.log('Serving static files from', buildPath);
   app.use(express.static(buildPath));
-  
+
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
@@ -134,4 +158,4 @@ if (require('fs').existsSync(buildPath)) {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

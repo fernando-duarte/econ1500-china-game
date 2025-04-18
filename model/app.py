@@ -1,15 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends, Path, Header, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
-from typing import Dict, List, Optional, Any
-import numpy as np
-import pandas as pd
-import os
+"""
+Enhanced wrapper for the canonical economic model API.
+This file redirects to the canonical implementation in china-growth-game/economic-model/app.py
+while adding security features like API keys and rate limiting.
+"""
 import sys
-import uvicorn
+import os
 import logging
+import importlib.util
+import uvicorn
 import time
 from collections import defaultdict
 
@@ -21,119 +19,186 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+logger = logging.getLogger(__name__)
 
-# Simple API key authorization
-API_KEY_NAME = "X-API-Key"
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+# Path to the canonical implementation
+canonical_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             'china-growth-game', 'economic-model')
 
-# In production, this would be stored securely and not in code
-ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "admin-dev-key")
+# Add the canonical path to sys.path if it's not already there
+if canonical_path not in sys.path:
+    sys.path.insert(0, canonical_path)
+    logger.info(f"Added canonical path to sys.path: {canonical_path}")
 
-# Team authorization mapping (in production, this would be in a database)
-team_api_keys = {}
+# Import the app from the canonical implementation
+try:
+    # Check if the canonical implementation exists
+    if not os.path.exists(os.path.join(canonical_path, 'app.py')):
+        raise ImportError(f"Canonical implementation not found at {canonical_path}")
 
-# Simple rate limiting implementation
-class RateLimiter:
-    def __init__(self, requests_per_minute=60):
-        self.requests_per_minute = requests_per_minute
-        self.request_counts = defaultdict(list)
+    # Import the app from the canonical implementation
+    spec = importlib.util.spec_from_file_location("canonical_app",
+                                                 os.path.join(canonical_path, 'app.py'))
+    canonical_app = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(canonical_app)
 
-    def is_rate_limited(self, client_id):
-        # Get current timestamp
-        now = time.time()
-        minute_ago = now - 60
+    # Get the FastAPI app from the canonical implementation
+    app = canonical_app.app
+    logger.info("Successfully imported canonical implementation")
 
-        # Clean up old requests
-        self.request_counts[client_id] = [ts for ts in self.request_counts[client_id] if ts > minute_ago]
+    # Import the GameState class from the canonical implementation
+    from game_state import GameState
 
-        # Check if rate limit exceeded
-        if len(self.request_counts[client_id]) >= self.requests_per_minute:
-            return True
+    # Create a single instance of the game state to be used for all requests
+    game_state = GameState()
 
-        # Add current request
-        self.request_counts[client_id].append(now)
-        return False
+    # Import FastAPI components for security enhancements
+    from fastapi import FastAPI, HTTPException, Depends, Path, Header, Request
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.security import APIKeyHeader
+    from fastapi.responses import JSONResponse
+    from pydantic import BaseModel, Field, field_validator
+    from typing import Dict, List, Optional, Any
 
-# Create rate limiter instance
-rate_limiter = RateLimiter(requests_per_minute=60)
+    # Simple API key authorization
+    API_KEY_NAME = "X-API-Key"
+    api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-# Rate limiting middleware
-async def rate_limit_middleware(request: Request, call_next):
-    # Get client IP or API key for rate limiting
-    client_id = request.headers.get(API_KEY_NAME, request.client.host)
+    # In production, this would be stored securely and not in code
+    ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "admin-dev-key")
 
-    # Check if rate limited
-    if rate_limiter.is_rate_limited(client_id):
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Rate limit exceeded. Please try again later."}
-        )
+    # Team authorization mapping (in production, this would be in a database)
+    team_api_keys = {}
 
-    # Process the request
-    response = await call_next(request)
-    return response
+    # Simple rate limiting implementation
+    class RateLimiter:
+        def __init__(self, requests_per_minute=60):
+            self.requests_per_minute = requests_per_minute
+            self.request_counts = defaultdict(list)
 
-async def get_api_key(api_key_header: str = Header(None, alias=API_KEY_NAME)):
-    return api_key_header
+        def is_rate_limited(self, client_id):
+            # Get current timestamp
+            now = time.time()
+            minute_ago = now - 60
 
-async def verify_admin_api_key(api_key: str = Depends(get_api_key)):
-    if api_key != ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid API key",
-        )
-    return api_key
+            # Clean up old requests
+            self.request_counts[client_id] = [ts for ts in self.request_counts[client_id] if ts > minute_ago]
 
-async def verify_team_api_key(request: Request, api_key: str = Depends(get_api_key)):
-    # Get team_id from path parameters
-    team_id = request.path_params.get("team_id")
+            # Check if rate limit exceeded
+            if len(self.request_counts[client_id]) >= self.requests_per_minute:
+                return True
 
-    # Admin key can access any team
-    if api_key == ADMIN_API_KEY:
+            # Add current request
+            self.request_counts[client_id].append(now)
+            return False
+
+    # Create rate limiter instance
+    rate_limiter = RateLimiter(requests_per_minute=60)
+
+    # Rate limiting middleware
+    async def rate_limit_middleware(request: Request, call_next):
+        # Get client IP or API key for rate limiting
+        client_id = request.headers.get(API_KEY_NAME, request.client.host)
+
+        # Check if rate limited
+        if rate_limiter.is_rate_limited(client_id):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded. Please try again later."}
+            )
+
+        # Process the request
+        response = await call_next(request)
+        return response
+
+    async def get_api_key(api_key_header: str = Header(None, alias=API_KEY_NAME)):
+        return api_key_header
+
+    async def verify_admin_api_key(api_key: str = Depends(get_api_key)):
+        if api_key != ADMIN_API_KEY:
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid API key",
+            )
         return api_key
 
-    # Check if this is a valid team key
-    if team_id not in team_api_keys or team_api_keys[team_id] != api_key:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid API key for this team",
-        )
-    return api_key
+    async def verify_team_api_key(request: Request, api_key: str = Depends(get_api_key)):
+        # Get team_id from path parameters
+        team_id = request.path_params.get("team_id")
 
-# Add the current directory to sys.path if it's not already there
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+        # Admin key can access any team
+        if api_key == ADMIN_API_KEY:
+            return api_key
 
-# Import the GameState class
-from game_state import GameState
+        # Check if this is a valid team key
+        if team_id not in team_api_keys or team_api_keys[team_id] != api_key:
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid API key for this team",
+            )
+        return api_key
 
-# Create a single instance of the game state to be used for all requests
-# This implements in-memory state management as requested
-game_state = GameState()
+    # Add rate limiting middleware
+    app.middleware("http")(rate_limit_middleware)
 
-app = FastAPI(
-    title="China's Growth Game Economic Model",
-    description="Backend economic calculations for the China's Growth Game simulation",
-    version="1.0.0"
-)
+    # Configure CORS
+    # Get allowed origins from environment or use default for development
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
-# Add rate limiting middleware
-app.middleware("http")(rate_limit_middleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
-# Configure CORS
-import os
+    # Override the create_team endpoint to add API key generation
+    from pydantic import BaseModel, Field
+    from typing import Optional, Dict, List, Any
 
-# Get allowed origins from environment or use default for development
-allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+    class TeamCreateRequest(BaseModel):
+        team_name: Optional[str] = None
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
-)
+    # We're not actually overriding the endpoint, just adding our own handler
+    # that will be called before the canonical one due to middleware order
+    @app.post("/teams/create")
+    def create_team_with_api_key(request: TeamCreateRequest, api_key: str = Depends(verify_admin_api_key)):  # api_key used for authorization
+        """Create a new team with API key."""
+        try:
+            team = game_state.create_team(request.team_name)
+
+            # Generate and store API key for this team
+            import secrets
+            team_api_key = secrets.token_urlsafe(32)
+            team_id = team["team_id"]
+            team_api_keys[team_id] = team_api_key
+
+            # Add API key to response (in production, this would be securely transmitted)
+            response = dict(team)
+            response["api_key"] = team_api_key
+
+            return response
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    logger.info("Enhanced the canonical implementation with security features")
+
+except Exception as e:
+    logger.error(f"Error importing canonical implementation: {str(e)}")
+    # Fallback to a minimal implementation
+    from fastapi import FastAPI
+    app = FastAPI(title="China's Growth Game Economic Model API (Fallback)")
+
+    @app.get("/")
+    def read_root():
+        return {"message": "Fallback API - Canonical implementation not available"}
+
+    @app.get("/health")
+    def health_check():
+        return {"status": "warning",
+                "message": "Fallback API running - Canonical implementation not available",
+                "error": str(e)}
 
 # Pydantic models for API requests and responses
 class InitialConditions(BaseModel):

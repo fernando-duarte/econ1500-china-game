@@ -8,10 +8,30 @@ This project is an educational simulation that allows students to experience fir
 
 ## Project Structure
 
-- `app/` - Node.js Express backend
-- `src/` - React frontend
-- `economic-model/` - Python-based economic simulation engine
-- `docs/` - Documentation files
+### Canonical Implementation
+
+- `china-growth-game/` - The canonical implementation of the game
+  - `app/` - Node.js Express backend (legacy, redirects to unified server)
+  - `src/` - React frontend (canonical implementation)
+  - `economic-model/` - Python-based economic simulation engine (canonical implementation)
+  - `docs/` - Documentation files
+
+### Unified Server
+
+- `unified-server.js` - Consolidated server implementation that combines functionality from multiple servers
+- `services/` - Shared services used by the unified server
+
+### Legacy Components (Deprecated)
+
+- `backend/` - Legacy Node.js Express backend (redirects to unified server)
+- `frontend/` - Legacy React frontend (redirects to canonical implementation)
+- `model/` - Legacy Python-based economic model (redirects to canonical implementation)
+- `economic-model/` - Legacy economic model (redirects to canonical implementation)
+
+### Configuration
+
+- `.env.example` - Consolidated environment configuration template
+- `docker-compose.unified.yml` - Unified Docker Compose configuration
 
 ## Key Documentation
 
@@ -73,7 +93,7 @@ This project is an educational simulation that allows students to experience fir
 2. Run the development environment startup script:
 
 ```bash
-./start-dev.sh
+./start-unified.sh
 ```
 
 This script will:
@@ -87,7 +107,7 @@ This script will:
 For production deployment, use the production Docker Compose configuration:
 
 ```
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.unified.yml up -d
 ```
 
 ## Contributing
@@ -100,4 +120,3 @@ docker-compose -f docker-compose.prod.yml up -d
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

@@ -1,23 +1,33 @@
+/**
+ * Legacy Server Wrapper
+ *
+ * This file is a wrapper around the unified server implementation.
+ * It redirects to the unified server to maintain backward compatibility.
+ *
+ * For new development, use the unified-server.js directly.
+ */
+
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const axios = require('axios');
-require('dotenv').config(); // For local/dev only. Do NOT use .env for production secrets.
+require('dotenv').config();
 
-// --- Secure Secrets Management Stub ---
-// In production, use a secure secrets manager (e.g., AWS Secrets Manager, HashiCorp Vault)
-// Example (pseudo-code):
-// const { getSecret } = require('./secretsManager');
-// async function getDbPassword() {
-//   if (process.env.NODE_ENV === 'production') {
-//     return await getSecret('dbPassword');
-//   } else {
-//     return process.env.DB_PASSWORD;
-//   }
-// }
-// See README for details.
-// --- End Secure Secrets Management Stub ---
+// Determine if we should run in legacy mode or redirect to unified server
+const LEGACY_MODE = process.env.LEGACY_MODE === 'true';
+
+if (!LEGACY_MODE) {
+  console.log('Running in redirect mode - forwarding to unified server');
+  // Load the unified server directly
+  require('../unified-server');
+  // This process will exit as the unified server takes over
+  process.exit(0);
+}
+
+// If we're here, we're running in legacy mode for backward compatibility
+console.log('Running in legacy mode - this is deprecated and will be removed in a future version');
 
 const app = express();
 const server = http.createServer(app);
