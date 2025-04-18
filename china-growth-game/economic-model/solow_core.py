@@ -220,7 +220,9 @@ def calculate_exchange_rate(year: int, e_policy: str) -> float:
     e_market_t = E_1980 + (7.0 - E_1980) * round_index / (num_rounds - 1)
 
     # Determine actual exchange rate based on policy using the policy multipliers
-    multiplier = POLICY_MULTIPLIERS.get(e_policy, 1.0)
+    if e_policy not in POLICY_MULTIPLIERS:
+        raise ValueError(f"Invalid exchange rate policy: {e_policy}. Must be one of {list(POLICY_MULTIPLIERS.keys())}")
+    multiplier = POLICY_MULTIPLIERS[e_policy]
     return e_market_t * multiplier
 
 def calculate_foreign_income(year: int) -> float:
@@ -246,6 +248,8 @@ def calculate_openness_ratio(round_index: int) -> float:
     Returns:
         Openness ratio
     """
+    # Handle negative indices by treating them as 0
+    round_index = max(0, round_index)
     return 0.1 + 0.02 * round_index
 
 def calculate_fdi_ratio(year: int) -> float:

@@ -5,14 +5,14 @@ class VisualizationManager:
     Manages the creation of visualization data for team histories.
     Extracts and formats data from team history for charts and visualizations.
     """
-    
+
     @staticmethod
     def get_team_visualizations(team_data):
         """Get visualization data for a specific team.
-        
+
         Args:
             team_data: Dict containing team state and history
-            
+
         Returns:
             Dict containing formatted data for various visualizations
         """
@@ -46,7 +46,10 @@ class VisualizationManager:
         gdp_growth = [0.0]  # Growth for the first year is 0
         for i in range(1, len(gdp)):
             if gdp[i-1] != 0:
-                growth = ((gdp[i] / gdp[i-1])**(1/5) - 1) * 100  # Annualized growth over 5 years
+                # Calculate years between data points for correct annualization
+                years_diff = years[i] - years[i-1]
+                # Annualized growth over the period between data points
+                growth = ((gdp[i] / gdp[i-1])**(1/years_diff) - 1) * 100
             else:
                 growth = 0.0
             gdp_growth.append(growth)
@@ -70,4 +73,4 @@ class VisualizationManager:
             }
         }
 
-        return vis_data 
+        return vis_data

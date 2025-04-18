@@ -9,24 +9,25 @@ class TestApp(unittest.TestCase):
     def setUp(self):
         """Set up the test environment."""
         self.client = TestClient(app)
-        
+
     def test_read_root(self):
         """Test the root endpoint."""
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "China's Growth Game Economic Model API"})
-        
+
     def test_health_check(self):
         """Test the health check endpoint."""
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok", "message": "Economic model service is running"})
-        
-    @patch('app.game_state')
-    def test_initialize_game(self, mock_game_state):
+
+    @patch('app.GameState')
+    def test_initialize_game(self, MockGameState):
         """Test the game initialization endpoint."""
-        # Mock the game state
-        mock_game_state.get_game_state.return_value = {
+        # Mock the GameState class constructor
+        mock_instance = MockGameState.return_value
+        mock_instance.get_game_state.return_value = {
             "game_id": "test-game-id",
             "current_round": 0,
             "current_year": 1980,
@@ -35,12 +36,12 @@ class TestApp(unittest.TestCase):
             "game_started": False,
             "game_ended": False
         }
-        
+
         response = self.client.post("/game/init")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["game_id"], "test-game-id")
         self.assertEqual(response.json()["current_round"], 0)
-        
+
     @patch('app.game_state')
     def test_start_game(self, mock_game_state):
         """Test the game start endpoint."""
@@ -54,17 +55,17 @@ class TestApp(unittest.TestCase):
             "game_started": True,
             "game_ended": False
         }
-        
+
         response = self.client.post("/game/start")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["game_started"], True)
-        
+
         # Test error handling
         mock_game_state.start_game.side_effect = ValueError("No teams")
         response = self.client.post("/game/start")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "No teams")
-        
+
     @patch('app.game_state')
     def test_advance_round(self, mock_game_state):
         """Test the round advancement endpoint."""
@@ -75,18 +76,18 @@ class TestApp(unittest.TestCase):
             "events": [],
             "rankings": {}
         }
-        
+
         response = self.client.post("/game/next-round")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["round"], 1)
         self.assertEqual(response.json()["year"], 1985)
-        
+
         # Test error handling
         mock_game_state.advance_round.side_effect = ValueError("Game not started")
         response = self.client.post("/game/next-round")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "Game not started")
-        
+
     @patch('app.game_state')
     def test_get_game_state(self, mock_game_state):
         """Test the game state retrieval endpoint."""
@@ -100,12 +101,12 @@ class TestApp(unittest.TestCase):
             "game_started": True,
             "game_ended": False
         }
-        
+
         response = self.client.get("/game/state")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["game_id"], "test-game-id")
         self.assertEqual(response.json()["current_round"], 1)
-        
+
     @patch('app.game_state')
     def test_create_team(self, mock_game_state):
         """Test the team creation endpoint."""
@@ -117,18 +118,18 @@ class TestApp(unittest.TestCase):
             "history": [],
             "decisions": []
         }
-        
+
         response = self.client.post("/teams/create", json={"team_name": "Test Team"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["team_id"], "test-team-id")
         self.assertEqual(response.json()["team_name"], "Test Team")
-        
+
         # Test error handling
         mock_game_state.create_team.side_effect = ValueError("Team name taken")
         response = self.client.post("/teams/create", json={"team_name": "Test Team"})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "Team name taken")
-        
+
     @patch('app.game_state')
     def test_submit_decision(self, mock_game_state):
         """Test the decision submission endpoint."""
@@ -140,7 +141,7 @@ class TestApp(unittest.TestCase):
             "exchange_rate_policy": "market",
             "submitted_at": "2023-01-01T00:00:00"
         }
-        
+
         response = self.client.post("/teams/decisions", json={
             "team_id": "test-team-id",
             "savings_rate": 0.3,
@@ -149,7 +150,7 @@ class TestApp(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["savings_rate"], 0.3)
         self.assertEqual(response.json()["exchange_rate_policy"], "market")
-        
+
         # Test error handling
         mock_game_state.submit_decision.side_effect = ValueError("Invalid team ID")
         response = self.client.post("/teams/decisions", json={
@@ -159,7 +160,7 @@ class TestApp(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "Invalid team ID")
-        
+
     @patch('app.game_state')
     def test_get_team_state(self, mock_game_state):
         """Test the team state retrieval endpoint."""
@@ -174,18 +175,18 @@ class TestApp(unittest.TestCase):
             "history": [],
             "decisions": []
         }
-        
+
         response = self.client.get("/teams/test-team-id")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["team_id"], "test-team-id")
         self.assertEqual(response.json()["team_name"], "Test Team")
-        
+
         # Test error handling
         mock_game_state.get_team_state.side_effect = ValueError("Team not found")
         response = self.client.get("/teams/invalid-id")
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["detail"], "Team not found")
-        
+
     @patch('app.game_state')
     def test_edit_team_name(self, mock_game_state):
         """Test the team name editing endpoint."""
@@ -197,17 +198,17 @@ class TestApp(unittest.TestCase):
             "history": [],
             "decisions": []
         }
-        
+
         response = self.client.post("/teams/test-team-id/edit-name", json={"new_name": "New Team Name"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["team_name"], "New Team Name")
-        
+
         # Test error handling
         mock_game_state.team_manager.edit_team_name.side_effect = ValueError("Team name taken")
         response = self.client.post("/teams/test-team-id/edit-name", json={"new_name": "Taken Name"})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "Team name taken")
-        
+
     @patch('app.game_state')
     def test_get_rankings(self, mock_game_state):
         """Test the rankings retrieval endpoint."""
@@ -217,12 +218,12 @@ class TestApp(unittest.TestCase):
             "net_exports": ["team3", "team1", "team2"],
             "balanced_economy": ["team2", "team1", "team3"]
         }
-        
+
         response = self.client.get("/results/rankings")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["gdp"], ["team2", "team1", "team3"])
         self.assertEqual(response.json()["net_exports"], ["team3", "team1", "team2"])
-        
+
     @patch('app.game_state')
     def test_get_team_visualizations(self, mock_game_state):
         """Test the team visualizations retrieval endpoint."""
@@ -241,13 +242,13 @@ class TestApp(unittest.TestCase):
                 "savings": 160.0
             }
         }
-        
+
         response = self.client.get("/results/visualizations/test-team-id")
         self.assertEqual(response.status_code, 200)
         self.assertIn("gdp_growth_chart", response.json())
         self.assertIn("trade_balance_chart", response.json())
         self.assertIn("consumption_savings_pie", response.json())
-        
+
         # Test error handling
         mock_game_state.get_team_visualizations.side_effect = ValueError("Team not found")
         response = self.client.get("/results/visualizations/invalid-id")
