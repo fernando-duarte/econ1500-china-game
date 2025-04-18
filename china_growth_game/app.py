@@ -15,23 +15,17 @@ import sys
 import json
 import traceback
 from china_growth_game.economic_model.game.game_state import GameState
+from china_growth_game.economic_model.utils.json_utils import (
+    convert_numpy_values,
+    numpy_safe_json_dumps,
+    numpy_safe_json_loads,
+    NumpyEncoder,
+    CustomJSONResponse
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
-
-# Helper function to handle numpy serialization
-def numpy_safe_encoder(obj):
-    """Convert numpy types to standard Python types for JSON serialization."""
-    if isinstance(obj, np.integer):
-        return int(obj)
-    elif isinstance(obj, np.floating):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif hasattr(obj, 'item'):
-        return obj.item()
-    return obj
 
 # Add the canonical path to facilitate imports when running from different directories
 import os
@@ -52,6 +46,9 @@ except ImportError as e:
 game_state = GameState()
 
 app = FastAPI(title="China's Growth Game Economic Model API")
+
+# Use custom response class for handling numpy types
+app.router.default_response_class = CustomJSONResponse
 
 # Pydantic models for API requests and responses
 class InitialConditions(BaseModel):
@@ -133,16 +130,16 @@ def initialize_game():
     global game_state
     game_state = GameState()  # Reset the game state
     state = game_state.get_game_state()
-    # Convert numpy types to Python types
-    return json.loads(json.dumps(state, default=numpy_safe_encoder))
+    # The state is already converted to Python types by the GameState class
+    return state
 
 @app.post("/game/start", response_model=GameStateResponse)
 def start_game():
     """Start the game with registered teams."""
     try:
         result = game_state.start_game()
-        # Convert numpy types to Python types
-        return json.loads(json.dumps(result, default=numpy_safe_encoder))
+        # The result is already converted to Python types by the GameState class
+        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -172,12 +169,12 @@ def advance_to_next_round():
         # Ensure result can be serialized
         try:
             # Test if the result can be serialized - this will raise an exception if it fails
-            json.dumps(result, default=numpy_safe_encoder)
+            json.dumps(result, cls=NumpyEncoder)
             logger.info("Result successfully serialized to JSON")
             print("Result successfully serialized to JSON", file=sys.stderr)
             sys.stderr.flush()
-            # Convert numpy types to Python types
-            return json.loads(json.dumps(result, default=numpy_safe_encoder))
+            # The result is already converted to Python types by the GameState class
+            return result
         except TypeError as e:
             # If serialization fails, log the error and handle it
             logger.error(f"JSON serialization error: {str(e)}")
@@ -187,7 +184,7 @@ def advance_to_next_round():
             fixed_result = {}
             for key, value in result.items():
                 try:
-                    json.dumps({key: value}, default=numpy_safe_encoder)
+                    json.dumps({key: value}, cls=NumpyEncoder)
                     fixed_result[key] = value
                 except TypeError:
                     logger.error(f"Key {key} has non-serializable value: {value}")
@@ -228,8 +225,8 @@ def advance_to_next_round():
 def get_game_state():
     """Get the current game state."""
     state = game_state.get_game_state()
-    # Convert numpy types to Python types
-    return json.loads(json.dumps(state, default=numpy_safe_encoder))
+    # The state is already converted to Python types by the GameState class
+    return state
 
 # Team management endpoints
 @app.post("/teams/create")
@@ -237,8 +234,8 @@ def create_team(request: TeamCreateRequest):
     """Create a new team."""
     try:
         team = game_state.create_team(request.team_name)
-        # Convert numpy types to Python types
-        return json.loads(json.dumps(team, default=numpy_safe_encoder))
+        # The team is already converted to Python types by the GameState class
+        return team
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -251,8 +248,8 @@ def submit_decision(request: DecisionSubmitRequest):
             request.savings_rate,
             request.exchange_rate_policy
         )
-        # Convert numpy types to Python types
-        return json.loads(json.dumps(decision, default=numpy_safe_encoder))
+        # The decision is already converted to Python types by the GameState class
+        return decision
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -261,8 +258,8 @@ def get_team_state(team_id: str):
     """Get the state of a specific team."""
     try:
         team_state = game_state.get_team_state(team_id)
-        # Convert numpy types to Python types
-        return json.loads(json.dumps(team_state, default=numpy_safe_encoder))
+        # The team_state is already converted to Python types by the GameState class
+        return team_state
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -280,16 +277,16 @@ def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None
 def get_rankings():
     """Get current rankings."""
     rankings = game_state.rankings_manager.rankings
-    # Convert numpy types to Python types
-    return json.loads(json.dumps(rankings, default=numpy_safe_encoder))
+    # The rankings are already converted to Python types by the GameState class
+    return rankings
 
 @app.get("/results/visualizations/{team_id}")
 def get_team_visualizations(team_id: str):
     """Get visualization data for a specific team."""
     try:
         visualizations = game_state.get_team_visualizations(team_id)
-        # Convert numpy types to Python types
-        return json.loads(json.dumps(visualizations, default=numpy_safe_encoder))
+        # The visualizations are already converted to Python types by the GameState class
+        return visualizations
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

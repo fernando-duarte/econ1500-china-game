@@ -14,33 +14,11 @@ from china_growth_game.economic_model.core.solow_core import (
     calculate_openness_ratio,
     calculate_fdi_ratio
 )
+from china_growth_game.economic_model.utils.json_utils import convert_numpy_values
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-def convert_numpy_values(obj):
-    """
-    Recursively convert numpy values to Python native types for JSON serialization.
-    
-    Args:
-        obj: The object to convert
-        
-    Returns:
-        The converted object with numpy types converted to Python native types
-    """
-    if isinstance(obj, dict):
-        return {key: convert_numpy_values(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_values(item) for item in obj]
-    elif isinstance(obj, np.integer):
-        return int(obj)
-    elif isinstance(obj, np.floating):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return convert_numpy_values(obj.tolist())
-    else:
-        return obj
 
 class GameState:
     """
@@ -182,7 +160,7 @@ class GameState:
         current_round_index = self.current_round - 1
         params_for_round = self._get_parameters_for_round(current_round_index)
 
-        # Prepare current state for calculation - handle both GDP and Y keys 
+        # Prepare current state for calculation - handle both GDP and Y keys
         current_state = team['current_state']
         current_state_for_calc = {
             'Y': current_state.get('GDP', current_state.get('Y', 0)),  # Try GDP first, then Y as fallback
@@ -275,7 +253,7 @@ class GameState:
             self.calculate_rankings()
             # Mark this round as processed
             self.processed_rounds.add(self.current_round)
-            
+
             # Convert numpy values to Python native types before returning
             result = convert_numpy_values({
                 "round": self.current_round,
@@ -283,7 +261,7 @@ class GameState:
                 "events": current_events,
                 "rankings": self.rankings_manager.rankings
             })
-            
+
             return result
         except Exception as e:
             logger.error(f"Error in advance_round: {str(e)}")
@@ -319,4 +297,4 @@ class GameState:
         """Get visualization data for a specific team."""
         team = self.team_manager.get_team_state(team_id)
         visualizations = self.visualization_manager.get_team_visualizations(team)
-        return convert_numpy_values(visualizations) 
+        return convert_numpy_values(visualizations)

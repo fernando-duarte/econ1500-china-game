@@ -48,6 +48,13 @@ try:
 
     # Import the GameState class from the canonical implementation
     from game_state import GameState
+    from china_growth_game.economic_model.utils.json_utils import (
+        convert_numpy_values,
+        numpy_safe_json_dumps,
+        numpy_safe_json_loads,
+        NumpyEncoder,
+        CustomJSONResponse
+    )
 
     # Create a single instance of the game state to be used for all requests
     game_state = GameState()

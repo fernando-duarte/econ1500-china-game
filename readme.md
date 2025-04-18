@@ -10,10 +10,15 @@ This project is an educational simulation that allows students to experience fir
 
 ### Canonical Implementation
 
-- `china-growth-game/` - The canonical implementation of the game
-  - `app/` - Node.js Express backend (legacy, redirects to unified server)
-  - `src/` - React frontend (canonical implementation)
-  - `economic-model/` - Python-based economic simulation engine (canonical implementation)
+- `china_growth_game/` - The canonical implementation of the game
+  - `app.py` - Main FastAPI application entry point
+  - `economic_model/` - Python-based economic simulation engine
+    - `app/` - FastAPI application
+    - `core/` - Core economic calculations
+    - `game/` - Game state management
+    - `tests/` - Unit tests
+    - `utils/` - Utility functions
+    - `visualization/` - Visualization tools
   - `docs/` - Documentation files
 
 ### Unified Server
@@ -25,8 +30,10 @@ This project is an educational simulation that allows students to experience fir
 
 - `backend/` - Legacy Node.js Express backend (redirects to unified server)
 - `frontend/` - Legacy React frontend (redirects to canonical implementation)
-- `model/` - Legacy Python-based economic model (redirects to canonical implementation)
+- `model/` - Legacy Python-based economic model (wrapper that imports from canonical implementation)
 - `economic-model/` - Legacy economic model (redirects to canonical implementation)
+
+**Note:** The legacy components have been updated to use the canonical implementation to avoid code duplication and ensure consistency.
 
 ### Configuration
 
@@ -75,6 +82,8 @@ This project is an educational simulation that allows students to experience fir
 - Automated CI pipeline with linting, formatting and testing
 - Performance budgets and monitoring
 - Immutable environments between CI and development
+- Standardized JSON serialization for consistent data handling
+- Consolidated codebase structure to eliminate duplication
 
 ## Accessibility
 
