@@ -117,9 +117,9 @@ def calculate_net_exports(
     
     return exports_term - imports_term
 
-def calculate_capital_next(K: float, Y: float, NX: float, s: float, delta: float) -> float:
+def calculate_capital_next(K: float, Y: float, NX: float, s: float, delta: float) -> Tuple[float, float]:
     """
-    Calculate next period capital stock.
+    Calculate next period capital stock and the investment amount.
     
     Args:
         K: Current capital stock
@@ -129,7 +129,7 @@ def calculate_capital_next(K: float, Y: float, NX: float, s: float, delta: float
         delta: Depreciation rate
         
     Returns:
-        K_next: Next period capital stock
+        Tuple[K_next, I]: Next period capital stock and Investment amount
     """
     K_safe = max(0, K)
     I = s * Y + NX
@@ -138,7 +138,8 @@ def calculate_capital_next(K: float, Y: float, NX: float, s: float, delta: float
     if I + (1 - delta) * K_safe < 0:
         I = -((1 - delta) * K_safe)
         
-    return (1 - delta) * K_safe + I
+    K_next = (1 - delta) * K_safe + I
+    return K_next, I
 
 def calculate_labor_next(L: float, n: float) -> float:
     """
@@ -247,26 +248,29 @@ def calculate_fdi_ratio(year: int) -> float:
 # =============================================================================
 # MAIN CALCULATION FUNCTIONS - Primary interfaces for simulations and game
 # =============================================================================
-def calculate_single_round(
-    current_state: Dict[str, float], 
-    parameters: Dict[str, float], 
-    student_inputs: Dict[str, Any], 
+def _calculate_step(
+    current_state: Dict[str, float],
+    parameters: Dict[str, float],
+    savings_rate: float,
+    exchange_rate_policy: str,
     year: int
 ) -> Dict[str, float]:
     """
-    Unified function to calculate a single round of the Solow model for game state.
-    This is the main entry point for single-step calculations in the game.
+    Internal function to calculate one step/round of the model.
+    Handles both game rounds (with student inputs) and simulation steps.
     
     Args:
-        current_state: Current values for {'Y', 'K', 'L', 'H', 'A'}.
+        current_state: Current values for {'K', 'L', 'H', 'A'}.
         parameters: Model parameters including Solow and NX parameters.
-        student_inputs: Student choices for this round {'s', 'e_policy'}.
-        year: Current year for the round.
-    
+        savings_rate: The savings rate to use for this step.
+        exchange_rate_policy: The exchange rate policy ('market', 'undervalue', etc.).
+        year: Current year for the step.
+        
     Returns:
-        Dictionary containing next round state and current round calculations.
+        Dictionary containing results for the current step (Y_t, C_t, I_t, NX_t) 
+        and state for the next step (K_next, L_next, H_next, A_next).
     """
-    # Get openness and FDI ratios for current round
+    # Get context-dependent variables
     round_index = max(0, (year - 1980) // 5)
     openness_ratio = calculate_openness_ratio(round_index)
     fdi_ratio = calculate_fdi_ratio(year)
@@ -286,7 +290,7 @@ def calculate_single_round(
     epsilon_m = params['epsilon_m']
     mu_x = params['mu_x']
     mu_m = params['mu_m']
-    Y_1980 = params.get('Y_1980', 1000)
+    Y_1980 = params.get('Y_1980', 1000) # Use a default if not present
     
     # Unpack current state
     K_t = current_state['K']
@@ -294,12 +298,8 @@ def calculate_single_round(
     H_t = current_state['H']
     A_t = current_state['A']
     
-    # Get student inputs
-    s_t = student_inputs['s']
-    e_policy = student_inputs['e_policy']
-    
-    # Calculate exchange rate and foreign income based on policy
-    e_t = calculate_exchange_rate(year, e_policy)
+    # Calculate exchange rate and foreign income
+    e_t = calculate_exchange_rate(year, exchange_rate_policy)
     Y_star_t = calculate_foreign_income(year)
     
     # Production
@@ -311,35 +311,56 @@ def calculate_single_round(
         X0, M0, epsilon_x, epsilon_m, mu_x, mu_m
     )
     
-    # Consumption
-    C_t = (1 - s_t) * Y_t
+    # Consumption (using the provided savings rate for this step)
+    C_t = (1 - savings_rate) * Y_t
     
-    # Investment 
-    I_t = s_t * Y_t + NX_t
-    K_safe = max(0, K_t)
-    # Prevent negative capital
-    if I_t + (1 - delta) * K_safe < 0:
-        I_t = -((1 - delta) * K_safe)
-    
-    # Calculate next period variables
-    K_next = calculate_capital_next(K_t, Y_t, NX_t, s_t, delta)
+    # Calculate next period variables using the modified capital function
+    K_next, I_t = calculate_capital_next(K_t, Y_t, NX_t, savings_rate, delta)
     L_next = calculate_labor_next(L_t, params['n'])
     H_next = calculate_human_capital_next(H_t, params['eta'])
     A_next = calculate_tfp_next(A_t, g, theta, openness_ratio, phi, fdi_ratio)
     
     # Return results
     return {
-        # State for the start of the next round
+        # State for the start of the next step/round
         'K_next': K_next,
         'L_next': L_next,
         'H_next': H_next,
         'A_next': A_next,
-        # Calculated values for the current round (t)
-        'Y_t': Y_t,     # GDP generated in round t
-        'NX_t': NX_t,   # Net Exports in round t
-        'C_t': C_t,     # Consumption in round t
-        'I_t': I_t      # Investment in round t
+        # Calculated values for the current step/round (t)
+        'Y_t': Y_t,
+        'NX_t': NX_t,
+        'C_t': C_t,
+        'I_t': I_t
     }
+
+def calculate_single_round(
+    current_state: Dict[str, float], 
+    parameters: Dict[str, float], 
+    student_inputs: Dict[str, Any], 
+    year: int
+) -> Dict[str, float]:
+    """
+    Unified function to calculate a single round of the Solow model for game state.
+    This is the main entry point for single-step calculations in the game.
+    
+    Args:
+        current_state: Current values for {'K', 'L', 'H', 'A'}.
+        parameters: Model parameters including Solow and NX parameters.
+        student_inputs: Student choices for this round {'s', 'e_policy'}.
+        year: Current year for the round.
+    
+    Returns:
+        Dictionary containing next round state and current round calculations.
+    """
+    # Use the internal step calculation function with student inputs
+    return _calculate_step(
+        current_state=current_state,
+        parameters=parameters,
+        savings_rate=student_inputs['s'],
+        exchange_rate_policy=student_inputs['e_policy'],
+        year=year
+    )
 
 def solve_solow_model(
     initial_year: int, 
@@ -369,62 +390,61 @@ def solve_solow_model(
     # Prepare simulation
     T = len(years)
     
-    # Initialize arrays
+    # Initialize arrays using initial conditions for period 0
     Y, K, L, H, A, NX, C, I = initialize_arrays(initial_conditions, T)
     
-    # Store exchange rates and foreign income for consistent calculations
-    exchange_rates = [calculate_exchange_rate(years[t], 'market') for t in range(T)]
-    foreign_incomes = [calculate_foreign_income(years[t]) for t in range(T)]
-    
-    # Simulation loop
-    for t in range(T-1):
-        year = years[t]
-        round_index = t
-        openness_ratio = calculate_openness_ratio(round_index)
-        fdi_ratio = calculate_fdi_ratio(year)
+    # Simulation loop using the internal step calculation function
+    for t in range(T - 1):
+        current_state = {'K': K[t], 'L': L[t], 'H': H[t], 'A': A[t]}
         
-        # Calculate production for current period
-        Y[t] = calculate_production(A[t], K[t], L[t], H[t], params['alpha'])
-        
-        # Calculate net exports for current period
-        NX[t] = calculate_net_exports(
-            Y[t], Y[0], exchange_rates[t], exchange_rates[0],
-            foreign_incomes[t], foreign_incomes[0],
-            params['X0'], params['M0'], 
-            params['epsilon_x'], params['epsilon_m'],
-            params['mu_x'], params['mu_m']
+        # Use the simulation's fixed savings rate and 'market' exchange rate
+        step_results = _calculate_step(
+            current_state=current_state,
+            parameters=params,
+            savings_rate=params['s'], # Use the fixed simulation savings rate
+            exchange_rate_policy='market', # Use 'market' for baseline simulation
+            year=years[t]
         )
         
-        # Calculate consumption and investment for current period
-        C[t] = (1 - params['s']) * Y[t]
-        I[t] = params['s'] * Y[t] + NX[t]
+        # Store results for period t
+        Y[t] = step_results['Y_t']
+        NX[t] = step_results['NX_t']
+        C[t] = step_results['C_t']
+        I[t] = step_results['I_t']
         
-        # Calculate next period state variables
-        K[t+1] = calculate_capital_next(K[t], Y[t], NX[t], params['s'], params['delta'])
-        L[t+1] = calculate_labor_next(L[t], params['n'])
-        H[t+1] = calculate_human_capital_next(H[t], params['eta'])
-        A[t+1] = calculate_tfp_next(A[t], params['g'], params['theta'], openness_ratio, params['phi'], fdi_ratio)
-    
+        # Update state for period t+1
+        K[t+1] = step_results['K_next']
+        L[t+1] = step_results['L_next']
+        H[t+1] = step_results['H_next']
+        A[t+1] = step_results['A_next']
+
     # Final year calculations (t = T-1)
+    # We need to calculate Y, C, I, NX for the final period using the state variables already computed
     t = T - 1
-    year = years[t]
+    current_state = {'K': K[t], 'L': L[t], 'H': H[t], 'A': A[t]}
     
-    # Calculate production for the final year
+    # Calculate final Y
     Y[t] = calculate_production(A[t], K[t], L[t], H[t], params['alpha'])
     
-    # Calculate net exports for the final year
+    # Calculate final NX (using market exchange rate for consistency in this simulation)
+    final_exchange_rate = calculate_exchange_rate(years[t], 'market')
+    final_foreign_income = calculate_foreign_income(years[t])
+    initial_exchange_rate = calculate_exchange_rate(years[0], 'market') # Base exchange rate at start
+    initial_foreign_income = calculate_foreign_income(years[0]) # Base foreign income at start
+    Y_initial = initial_conditions.get('Y', params.get('Y_1980', 1000)) # Use initial Y if available, else Y_1980
+    
     NX[t] = calculate_net_exports(
-        Y[t], Y[0], exchange_rates[t], exchange_rates[0],
-        foreign_incomes[t], foreign_incomes[0],
+        Y[t], Y_initial, final_exchange_rate, initial_exchange_rate,
+        final_foreign_income, initial_foreign_income,
         params['X0'], params['M0'], 
         params['epsilon_x'], params['epsilon_m'],
         params['mu_x'], params['mu_m']
     )
     
-    # Final consumption and investment
+    # Final C and I
     C[t] = (1 - params['s']) * Y[t]
-    I[t] = params['s'] * Y[t] + NX[t]
-    
+    I[t] = params['s'] * Y[t] + NX[t] # Direct calculation as K_next is not needed
+
     # Create DataFrame
     results_df = pd.DataFrame({
         'Year': years,
