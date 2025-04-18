@@ -8,9 +8,11 @@ This project is an educational simulation that allows students to experience fir
 
 ## Project Structure
 
-### Canonical Implementation
+This project consists of two main components:
 
-- `china_growth_game/` - The canonical implementation of the game
+### 1. Economic Model (Python)
+
+- `china_growth_game/` - The canonical implementation of the economic model (Python package)
   - `app.py` - Main FastAPI application entry point
   - `economic_model/` - Python-based economic simulation engine
     - `app/` - FastAPI application
@@ -19,19 +21,23 @@ This project is an educational simulation that allows students to experience fir
     - `tests/` - Unit tests
     - `utils/` - Utility functions
     - `visualization/` - Visualization tools
-  - `docs/` - Documentation files
 
-### Unified Server
+### 2. Frontend Application (React/Node.js)
 
-- `unified-server.js` - Consolidated server implementation that combines functionality from multiple servers
-- `services/` - Shared services used by the unified server
+- `china-growth-game/` - The frontend web application
+  - `app/` - Node.js Express server
+  - `public/` - Static assets
+  - `src/` - React application source code
+  - `run_server.py` - Helper script to start the economic model API
 
-### Legacy Components (Deprecated)
+### Additional Components
 
-- `backend/` - Legacy Node.js Express backend (redirects to unified server)
-- `frontend/` - Legacy React frontend (redirects to canonical implementation)
-- `model/` - Legacy Python-based economic model (wrapper that imports from canonical implementation)
-- `economic-model/` - Legacy economic model (redirects to canonical implementation)
+- `model/` - Wrapper module that imports from the canonical implementation
+- `docs/` - Project documentation
+
+**Note:** The naming difference (`china_growth_game` vs `china-growth-game`) is intentional:
+- `china_growth_game` uses underscores as per Python package naming conventions
+- `china-growth-game` uses hyphens as per JavaScript/Node.js package naming conventions
 
 **Note:** The legacy components have been updated to use the canonical implementation to avoid code duplication and ensure consistency.
 
