@@ -17,11 +17,10 @@ Make sure to:
 ## Step 2: Update Core Configuration Files
 
 ### Python Dependencies
-1. Update `economic-model/requirements.txt`
-2. Regenerate the lock file:
+1. Update `model/requirements.txt` and `china-growth-game/economic-model/requirements.txt`
+2. Regenerate the lock files:
    ```bash
-   cd model
-   ./generate-lock.sh
+   ./scripts/generate-python-locks.sh
    ```
 
 ### Node.js Dependencies
@@ -44,11 +43,11 @@ Make sure to:
    # Frontend tests
    cd frontend
    npm test
-   
+
    # Backend tests
    cd backend
    npm test
-   
+
    # Model tests
    cd economic-model
    pytest
@@ -75,4 +74,4 @@ Make sure to:
 - [ ] All tests pass
 - [ ] Documentation updated
 - [ ] Confirmed Docker builds work
-- [ ] Changelog updated with notable changes 
+- [ ] Changelog updated with notable changes

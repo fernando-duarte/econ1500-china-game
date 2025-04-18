@@ -1,0 +1,61 @@
+name: Version Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**/*.json'
+      - '**/*.txt'
+      - '**/Dockerfile*'
+      - 'docker/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**/*.json'
+      - '**/*.txt'
+      - '**/Dockerfile*'
+      - 'docker/**'
+  workflow_dispatch:
+
+jobs:
+  validate-versions:
+    name: Validate Version Consistency
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.13.1'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Validate version consistency
+        run: node scripts/validate-versions.js
+      
+      - name: Check for version drift in Python requirements
+        run: |
+          # Install Python
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-venv python3-pip
+          
+          # Generate temporary lock files
+          ./scripts/generate-python-locks.sh
+          
+          # Compare with committed lock files
+          if ! diff -q model/requirements.lock model/requirements.lock.new > /dev/null; then
+            echo "❌ model/requirements.lock is out of date. Run ./scripts/generate-python-locks.sh to update it."
+            exit 1
+          fi
+          
+          if ! diff -q china-growth-game/economic-model/requirements.lock china-growth-game/economic-model/requirements.lock.new > /dev/null; then
+            echo "❌ china-growth-game/economic-model/requirements.lock is out of date. Run ./scripts/generate-python-locks.sh to update it."
+            exit 1
+          fi
+          
+          echo "✅ All Python requirements lock files are up to date."
