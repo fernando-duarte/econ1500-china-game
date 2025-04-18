@@ -84,10 +84,21 @@ class TeamManager:
         
         team_id = str(uuid.uuid4())
         
-        # Initial team state
-        initial_state = self.initial_conditions.copy()
-        initial_state["year"] = current_year
-        initial_state["round"] = current_round
+        # Get initial conditions from default
+        initial_cond = self.initial_conditions.copy()
+        
+        # Transform initial conditions to the expected format
+        # Map from economics naming convention to game API naming convention
+        initial_state = {
+            "GDP": initial_cond.get("Y", 306.2),  # Y → GDP 
+            "Capital": initial_cond.get("K", 800),  # K → Capital
+            "Labor Force": initial_cond.get("L", 600),  # L → Labor Force
+            "Human Capital": initial_cond.get("H", 1.0),  # H → Human Capital
+            "Productivity (TFP)": initial_cond.get("A", 1.0),  # A → Productivity (TFP)
+            "Net Exports": initial_cond.get("NX", 3.6),  # NX → Net Exports
+            "year": current_year,
+            "round": current_round
+        }
         
         # Initial team state
         team = {

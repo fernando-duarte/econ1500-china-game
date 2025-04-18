@@ -157,13 +157,14 @@ class GameState:
         current_round_index = self.current_round - 1
         params_for_round = self._get_parameters_for_round(current_round_index)
 
-        # Prepare current state for calculation
+        # Prepare current state for calculation - handle both GDP and Y keys 
+        current_state = team['current_state']
         current_state_for_calc = {
-            'Y': team['current_state']['GDP'],
-            'K': team['current_state']['Capital'],
-            'L': team['current_state']['Labor Force'],
-            'H': team['current_state']['Human Capital'],
-            'A': team['current_state']['Productivity (TFP)']
+            'Y': current_state.get('GDP', current_state.get('Y', 0)),  # Try GDP first, then Y as fallback
+            'K': current_state.get('Capital', current_state.get('K', 0)),
+            'L': current_state.get('Labor Force', current_state.get('L', 0)),
+            'H': current_state.get('Human Capital', current_state.get('H', 0)),
+            'A': current_state.get('Productivity (TFP)', current_state.get('A', 0))
         }
 
         # Prepare student inputs
