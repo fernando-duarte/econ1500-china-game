@@ -1,75 +1,134 @@
-# China's Growth Game: Saving, Trade, and Prosperity (1980–2025)
+# China Growth Game
 
-An interactive economic simulation game designed for undergraduate economics courses.
+Interactive economic simulation game for undergraduate economics courses focused on China's economic growth.
 
 ## Overview
-**Duration**: 50 minutes (10 rounds, each representing 5-year intervals from 1980–2025)  
-**Participants**: 80 students divided into 10 teams of 8 students each
 
-## Requirements
-- Interactive web UI for student decision-making and data visualization
-- Real-time synchronization between student devices and professor dashboard
-- Stable Wi-Fi connectivity for up to 80 concurrent users
-- Clear and intuitive UI/UX design suitable for classroom settings
-- Python 3.12 for economic model compatibility
+This project is an educational simulation that allows students to experience firsthand the economic challenges and policy decisions that shaped China's remarkable growth through a gamified Solow model. Teams compete to achieve the highest GDP growth by making strategic decisions about savings rates and exchange rate policies.
 
-## Tech Stack
+## Project Structure
 
-### Frontend
-- React.js: 18.2.0
-- Material UI (MUI): 5.15.14
-- Chart.js: 4.4.3
+- `app/` - Node.js Express backend
+- `src/` - React frontend
+- `economic-model/` - Python-based economic simulation engine
+- `docs/` - Documentation files
 
-### Backend
-- Node.js: 20.13.1
-- Express.js: 5.1.0
-- WebSockets (Socket.IO): 4.7.5
+## Key Documentation
 
-### Economic Model Computations
-- Python: 3.12.10 (required for economic model compatibility)
-- FastAPI: 0.110.0
-- NumPy: 1.26.4
-- Pandas: 2.2.2
+- [Acceptance Criteria](docs/acceptance-criteria.md) - Detailed requirements for features including team naming and prize logic
+- [Performance Budget](docs/performance-budget.md) - Performance targets for bundle size, load times, and API response times
+- [Code Review Checklist](docs/code-review-checklist.md) - Standard checklist for reviewing code changes
+- [Secrets Management](app/config/secrets.js) - Secure storage for production credentials
+- [Feature Flags](app/config/featureFlags.js) - Feature toggling system for controlled rollouts
+- [Accessibility](src/components/common/AccessibilityProvider.jsx) - WCAG 2.1 AA compliance features
 
-### Deployment
-- Docker: 26.1.4
-- Multi-stage builds for production optimization
-- AWS EC2 (Recommended)
+## Technology Stack
 
-## Development Milestones
+- **Frontend**: React 18, Material UI, Chart.js
+- **Backend**: Node.js, Express
+- **Economic Model**: Python, FastAPI, NumPy
+- **Infrastructure**: Docker, GitHub Actions
 
-### Milestone 1: Infrastructure Setup
-- Initialize GitHub repository
-- Set up Docker container environment
-- Establish backend structure (Node.js and Express.js)
+## Security Features
 
-### Milestone 2: Economic Model Implementation
-- Develop Python microservice with explicit economic model computations
-- Validate economic calculations through unit tests
-- Ensure microservice integration with backend via API endpoints
+- Environment-specific configurations
+- Secrets management for production credentials (HashiCorp Vault/AWS Secrets Manager)
+- Authentication and authorization middleware
+- Input validation and sanitization
 
-### Milestone 3: Frontend and UI Design
-- Implement interactive decision controls (savings rate slider, exchange rate buttons)
-- Design real-time dashboard with countdown timer and economic statistics
-- Integrate visualizations (GDP growth, trade balance, consumption vs. savings)
-- Build event-driven "Breaking News" UI component
+## Quality Assurance
 
-### Milestone 4: Real-time Interactivity
-- Set up WebSocket integration for real-time game state synchronization
-- Develop Professor Dashboard with real-time ranking and controls for game flow
-- Conduct load testing for simultaneous connections (up to 100) **[Implemented, see `load-testing/`]**
+- Extensive test coverage for economic model
+- Deterministic simulation replay for debugging
+- Automated CI pipeline with linting, formatting and testing
+- Performance budgets and monitoring
 
-### Milestone 5: Deployment and Testing
-- Deploy integrated application to AWS EC2
-  - Configure EC2 instance (t3.medium, Ubuntu Server 22.04 LTS)
-  - Install Docker and Docker Compose
-  - Clone repository, build and run Docker containers
-  - Optional: Domain registration and SSL certification (Let's Encrypt)
-- Perform comprehensive end-to-end testing
-- Execute a mock classroom run-through with a smaller test group
-- Gather feedback and make necessary adjustments for stability and usability
+## Accessibility
 
-## Load Testing
+- WCAG 2.1 AA compliance
+- Screen reader support
+- Keyboard navigation
+- High contrast mode
+- Large text support
+- Reduced motion option
 
-A load testing script and instructions are provided in the `load-testing/` directory. This allows you to simulate up to 100 users making HTTP and WebSocket requests to the backend, verifying real-time interactivity and server robustness. See `load-testing/README.md` for details on running and customizing the test.
+## Development Prerequisites
+
+- Node.js 20.x or later
+- Python 3.12 or later
+- Docker & Docker Compose
+
+## Installation & Setup
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/username/china-growth-game.git
+   cd china-growth-game
+   ```
+
+2. Install dependencies:
+   ```
+   # Backend dependencies
+   npm install
+   
+   # Frontend dependencies
+   cd src && npm install
+   cd ..
+   
+   # Economic model dependencies
+   cd economic-model
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   cd ..
+   ```
+
+3. Set up environment:
+   Create a `.env` file in the project root with the following variables:
+   ```
+   PORT=3000
+   ECONOMIC_MODEL_URL=http://localhost:8000
+   NODE_ENV=development
+   ```
+
+4. Start the development servers:
+   ```
+   # Start all services with Docker Compose
+   docker-compose up
+   
+   # Or start services individually
+   # Backend
+   npm run dev
+   
+   # Frontend
+   npm run start:react
+   
+   # Economic Model
+   cd economic-model
+   uvicorn app:app --reload --port 8000
+   ```
+
+5. Access the application:
+   - Main application: http://localhost:3001
+   - Backend API: http://localhost:3000
+   - Economic model API: http://localhost:8000
+
+## Deployment
+
+For production deployment, use the production Docker Compose configuration:
+
+```
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make your changes following our [code review checklist](docs/code-review-checklist.md)
+3. Ensure all tests pass and lint checks succeed
+4. Submit a pull request using the PR template
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 

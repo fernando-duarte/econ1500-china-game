@@ -2,6 +2,8 @@ import uuid
 import random
 from datetime import datetime
 from typing import Dict, List, Optional, Any
+import pandas as pd
+import os
 
 # Fun team name components for auto-generation
 ECONOMIC_ADJECTIVES = [
@@ -18,6 +20,14 @@ ECONOMIC_NOUNS = [
 DEFAULT_SAVINGS_RATE = 0.2  # 20%
 DEFAULT_EXCHANGE_RATE_POLICY = "market"
 
+# Add a basic list of inappropriate words (can be expanded)
+INAPPROPRIATE_WORDS = {"badword", "inappropriate", "offensive"}
+
+def is_name_appropriate(name: str) -> bool:
+    """Check if the name contains any inappropriate words (case-insensitive)."""
+    lowered = name.lower()
+    return not any(bad in lowered for bad in INAPPROPRIATE_WORDS)
+
 class TeamManager:
     """
     Manages team creation, decision submission, and team state.
@@ -25,6 +35,9 @@ class TeamManager:
     
     def __init__(self):
         self.teams = {}
+        # Load initial conditions from CSV
+        csv_path = os.path.join(os.path.dirname(__file__), 'initial_conditions_v1.csv')
+        self.initial_conditions = pd.read_csv(csv_path).iloc[0].to_dict()
     
     def generate_team_name(self) -> str:
         """Generate a fun, economics-themed team name."""
@@ -32,30 +45,38 @@ class TeamManager:
         noun = random.choice(ECONOMIC_NOUNS)
         return f"The {adjective} {noun}"
     
+    def is_name_unique(self, name: str) -> bool:
+        """Check if the team name is unique among all teams (case-insensitive)."""
+        lowered = name.lower()
+        return all(team["team_name"].lower() != lowered for team in self.teams.values())
+
     def create_team(self, team_name: Optional[str] = None, current_year: int = 1980, current_round: int = 0) -> Dict[str, Any]:
-        """Create a new team with initial state."""
+        """Create a new team with initial state, enforcing uniqueness and appropriateness."""
         if len(self.teams) >= 10:
             raise ValueError("Maximum number of teams (10) already reached")
         
+        # Auto-generate a name if not provided, and ensure uniqueness
+        if not team_name:
+            attempts = 0
+            while True:
+                team_name = self.generate_team_name()
+                if self.is_name_unique(team_name):
+                    break
+                attempts += 1
+                if attempts > 100:
+                    raise ValueError("Could not generate a unique team name after 100 attempts")
+        else:
+            if not self.is_name_unique(team_name):
+                raise ValueError(f"Team name '{team_name}' is already taken")
+            if not is_name_appropriate(team_name):
+                raise ValueError("Team name contains inappropriate language")
+        
         team_id = str(uuid.uuid4())
         
-        # Auto-generate a name if not provided
-        if not team_name:
-            team_name = self.generate_team_name()
-        
-        # Initial team state with values from specs.md
-        initial_state = {
-            "year": current_year,
-            "round": current_round,
-            "Y": 306.2,  # GDP
-            "K": 800,    # Capital
-            "L": 600,    # Labor Force
-            "H": 1.0,    # Human Capital
-            "A": 1.0,    # Productivity (TFP)
-            "NX": 3.6,   # Net Exports
-            "C": 306.2 * (1 - DEFAULT_SAVINGS_RATE),  # Consumption (using default savings rate)
-            "initial_Y": 306.2  # Keep track of initial GDP for imports calculation
-        }
+        # Initial team state from CSV
+        initial_state = self.initial_conditions.copy()
+        initial_state["year"] = current_year
+        initial_state["round"] = current_round
         
         # Initial team state
         team = {
@@ -150,4 +171,15 @@ class TeamManager:
             return {
                 "savings_rate": DEFAULT_SAVINGS_RATE,
                 "exchange_rate_policy": DEFAULT_EXCHANGE_RATE_POLICY
-            } 
+            }
+
+    def edit_team_name(self, team_id: str, new_name: str) -> Dict[str, Any]:
+        """Edit a team's name, enforcing uniqueness and appropriateness."""
+        if team_id not in self.teams:
+            raise ValueError(f"Team with ID {team_id} does not exist")
+        if not self.is_name_unique(new_name):
+            raise ValueError(f"Team name '{new_name}' is already taken")
+        if not is_name_appropriate(new_name):
+            raise ValueError("Team name contains inappropriate language")
+        self.teams[team_id]["team_name"] = new_name
+        return self.teams[team_id] 

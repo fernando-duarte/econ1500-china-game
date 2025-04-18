@@ -10,6 +10,7 @@ class EventsManager:
         
     def _initialize_events(self) -> List[Dict[str, Any]]:
         """Initialize economic events that will occur during the game."""
+        # AUDIT: Ensure all required events (WTO, GFC, Trade War, COVID) are implemented with correct timing and effects.
         return [
             {
                 "year": 2001,

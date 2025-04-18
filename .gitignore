@@ -1,6 +1,15 @@
 .DS_Store 
 Python Solow Model/
 
+# Node.js dependencies
+node_modules/
+**/node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+**/package-lock.json
+**/yarn.lock
+
 # Python Virtual Environments
 venv/
 env/
@@ -14,6 +23,12 @@ __pycache__/
 *.so
 .Python 
 
+# IDE files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
 # Backup files
 *.bak
 *~
@@ -26,4 +41,22 @@ material-dashboard-react-main/
 .docker/
 docker-compose.override.yml 
 
-venv-py312/ 
+# Logs
+logs
+*.log
+
+# Build directories
+**/build/
+**/dist/
+**/.next/
+**/.nuxt/
+
+# Testing
+**/coverage/
+.nyc_output
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local 

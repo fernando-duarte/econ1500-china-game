@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Path
 from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
@@ -71,6 +71,9 @@ class GameStateResponse(BaseModel):
     rankings: Dict[str, List[str]]
     game_started: bool
     game_ended: bool
+
+class TeamEditNameRequest(BaseModel):
+    new_name: str
 
 @app.get("/")
 def read_root():
@@ -155,6 +158,15 @@ def get_team_state(team_id: str):
         return game_state.get_team_state(team_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@app.post("/teams/{team_id}/edit-name")
+def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None):
+    """Edit a team's name, enforcing uniqueness and appropriateness."""
+    try:
+        team = game_state.team_manager.edit_team_name(team_id, request.new_name)
+        return team
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # Results and visualization endpoints
 @app.get("/results/rankings")

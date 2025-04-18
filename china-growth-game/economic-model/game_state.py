@@ -33,6 +33,7 @@ class GameState:
         self.years = np.arange(1980, 2026, 5)
         self.game_started = False
         self.game_ended = False
+        self.processed_rounds = set()  # Track processed rounds for idempotency
         
         # Initialize component managers
         self.team_manager = TeamManager()
@@ -204,22 +205,26 @@ class GameState:
         """Advance to the next round, simulating economic changes based on decisions."""
         if not self.game_started:
             raise ValueError("Cannot advance round: game not started")
-        
         if self.current_round >= len(self.years) - 1:
             self.game_ended = True
             return {"message": "Game has ended", "final_rankings": self.calculate_rankings()}
-        
+        # Idempotency check: if this round has already been processed, return current state
+        if self.current_round in self.processed_rounds:
+            logger.warning(f"Round {self.current_round} has already been processed. Skipping.")
+            return {
+                "round": self.current_round,
+                "year": self.current_year,
+                "events": self.events_manager.get_current_events(self.current_year),
+                "rankings": self.rankings_manager.rankings
+            }
         try:
             # Move to next round (0-based index)
             self.current_round += 1
             self.current_year = self.years[self.current_round]
-            
             logger.debug(f"Advancing to round {self.current_round}, year {self.current_year}")
-            
             # Get events for this round
             current_events = self.events_manager.get_current_events(self.current_year)
             logger.debug(f"Current events: {current_events}")
-            
             # Process each team's state based on their decisions
             for team_id, team in self.team_manager.teams.items():
                 try:
@@ -228,10 +233,10 @@ class GameState:
                     logger.error(f"Error processing team {team_id}: {str(e)}")
                     logger.error(traceback.format_exc())
                     raise
-            
             # Calculate rankings after processing all teams
             self.calculate_rankings()
-            
+            # Mark this round as processed
+            self.processed_rounds.add(self.current_round)
             return {
                 "round": self.current_round,
                 "year": self.current_year,

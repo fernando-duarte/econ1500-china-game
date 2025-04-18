@@ -16,6 +16,9 @@ class VisualizationManager:
         Returns:
             Dict containing formatted data for various visualizations
         """
+        # AUDIT: Ensure all three required results visualizations (GDP growth, trade balance, consumption vs savings) are implemented.
+        # ADD: Comments for clarity and maintainability.
+        # REMOVE: Any code duplication.
         # Combine history and current state for full data series
         full_history = team_data["history"] + [team_data["current_state"]]
 

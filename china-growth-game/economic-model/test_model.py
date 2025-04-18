@@ -1,6 +1,7 @@
 import unittest
 import numpy as np # Add numpy import if needed for assertions
 from solow_model import calculate_next_round
+from replay import replay_session
 
 class TestSolowModel(unittest.TestCase):
     """Test cases for the calculate_next_round function."""
@@ -131,6 +132,38 @@ class TestSolowModel(unittest.TestCase):
 
     # Removed visualization test as it tested a method on the old class
     # def test_visualization_data(self): ...
+
+    # Add: Tests for group naming, event triggers, prize logic, model equations, and round update logic.
+    # Remove: Any stubbing/mocking for dev/prod.
+    # Add: Comments for clarity and maintainability.
+
+    def test_replay_session_reproducibility(self):
+        """Test that replaying a session with the same inputs is deterministic."""
+        # Initial conditions for one team
+        initial_conditions = {
+            "team-1": {
+                "team_name": "Test Team",
+                "year": 1980,
+                "round": 0,
+                "Y": 306.2,
+                "K": 800,
+                "L": 600,
+                "H": 1.0,
+                "A": 1.0,
+                "NX": 3.6,
+                "C": 244.96,
+                "initial_Y": 306.2
+            }
+        }
+        # Decisions log: (team_id, round, savings_rate, exchange_rate_policy)
+        decisions_log = [
+            ("team-1", 1, 0.2, "market"),
+            ("team-1", 2, 0.3, "undervalue"),
+            ("team-1", 3, 0.25, "market")
+        ]
+        result1 = replay_session(initial_conditions, decisions_log, num_rounds=3)
+        result2 = replay_session(initial_conditions, decisions_log, num_rounds=3)
+        self.assertEqual(result1, result2, "Replay should be deterministic and reproducible")
 
 if __name__ == '__main__':
     unittest.main() 
