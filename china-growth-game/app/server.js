@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const EconomicModelService = require('./services/economic-model-service');
 
 // Initialize services
@@ -110,6 +111,24 @@ app.post('/api/teams/:teamId/decisions', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// Serve static files from the React build directory if available
+const buildPath = path.join(__dirname, '..', 'build');
+if (require('fs').existsSync(buildPath)) {
+  console.log('Serving static files from', buildPath);
+  app.use(express.static(buildPath));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+} else {
+  console.log('No build directory found, only API endpoints will be available');
+  // If no build directory, at least provide some response at the root
+  app.get('/', (req, res) => {
+    res.send('China Growth Game API Server - Build the frontend or use the dev server to access the UI');
+  });
+}
 
 // Start server
 const PORT = process.env.PORT || 3000;
