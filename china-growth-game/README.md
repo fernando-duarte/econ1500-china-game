@@ -85,6 +85,10 @@ china-growth-game/
 
 1. Start the Economic Model API:
    ```
+   # Option 1: Using the convenience launcher script (recommended)
+   python run_server.py --port 8001 --reload
+   
+   # Option 2: Directly with uvicorn
    cd economic-model
    uvicorn app:app --host 0.0.0.0 --port 8000 --reload
    ```
@@ -97,6 +101,16 @@ china-growth-game/
 3. Access the application:
    - Frontend: http://localhost:3000
    - Economic Model API: http://localhost:8000
+
+### Troubleshooting
+
+If you encounter import errors when running the server:
+1. Make sure you're either using the launcher script or running the command from the `economic-model` directory
+2. Verify that your Python virtual environment has all required dependencies installed
+3. Check the logs for specific error messages
+
+For JSON serialization errors with numpy data types:
+- The application now includes a numpy serialization handler that converts numpy types to standard Python types
 
 ## API Endpoints
 
