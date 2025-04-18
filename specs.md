@@ -16,7 +16,7 @@
   - Express.js 5.1.0
   - Socket.IO 4.7.5
 - **Economic Model:** 
-  - Python 3.13.0
+  - Python 3.12.2
   - FastAPI 0.110.0
   - NumPy 1.26.4
   - Pandas 2.2.2

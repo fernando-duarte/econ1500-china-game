@@ -18,6 +18,8 @@ This project is an educational simulation that allows students to experience fir
 - [Acceptance Criteria](docs/acceptance-criteria.md) - Detailed requirements for features including team naming and prize logic
 - [Performance Budget](docs/performance-budget.md) - Performance targets for bundle size, load times, and API response times
 - [Code Review Checklist](docs/code-review-checklist.md) - Standard checklist for reviewing code changes
+- [Version Management](docs/version-management.md) - Single source of truth for all version information
+- [Version Update Process](docs/version-update-process.md) - Procedure for updating dependencies
 - [Secrets Management](app/config/secrets.js) - Secure storage for production credentials
 - [Feature Flags](app/config/featureFlags.js) - Feature toggling system for controlled rollouts
 - [Accessibility](src/components/common/AccessibilityProvider.jsx) - WCAG 2.1 AA compliance features
@@ -25,10 +27,10 @@ This project is an educational simulation that allows students to experience fir
 
 ## Technology Stack
 
-- **Frontend**: React 18, Material UI, Chart.js
-- **Backend**: Node.js, Express
-- **Economic Model**: Python, FastAPI, NumPy
-- **Infrastructure**: Docker, GitHub Actions
+- **Frontend**: React 18.2.0, Material UI 5.15.14, Chart.js 4.4.3
+- **Backend**: Node.js 20.13.1, Express 5.1.0, Socket.IO 4.7.5
+- **Economic Model**: Python 3.12.2, FastAPI 0.110.0, NumPy 1.26.4, Pandas 2.2.2
+- **Infrastructure**: Docker 26.1.4, GitHub Actions
 
 ## Security Features
 
@@ -61,7 +63,7 @@ This project is an educational simulation that allows students to experience fir
 
 ## Development Prerequisites
 
-- Node.js 20.12.1 or later
+- Node.js 20.13.1 or later
 - Python 3.12.2 or later
 - Docker & Docker Compose
 

@@ -3,7 +3,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
-    image: solow-game-frontend:prod
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+    image: ${FRONTEND_IMAGE}:${FRONTEND_VERSION}-prod
     ports:
       - "80:80"
     depends_on:
@@ -27,7 +29,9 @@ services:
     build:
       context: ./model
       dockerfile: Dockerfile.prod
-    image: solow-game-model:prod
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    image: ${MODEL_IMAGE}:${MODEL_VERSION}-prod
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -51,11 +55,11 @@ networks:
 
 volumes:
   frontend_node_modules:
-    name: china-growth-game-frontend-modules-prod
+    name: solow-game-frontend-modules-prod
   backend_node_modules:
-    name: china-growth-game-backend-modules-prod
+    name: solow-game-backend-modules-prod
   model_python_deps:
-    name: china-growth-game-model-deps-prod
+    name: solow-game-model-deps-prod
   model_data:
     name: solow_game_model_data_prod
     driver: local 

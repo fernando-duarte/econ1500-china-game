@@ -9,7 +9,7 @@ The 1.1.0 update includes several dependency updates to improve security, perfor
 ### What's Updated
 
 - **Node.js**: Updated from 20.10.0 to 20.12.1 (LTS)
-- **FastAPI**: Updated from 0.110.0 to 0.115.12
+- **FastAPI**: Updated from 0.100.0 to 0.110.0
 - **Uvicorn**: Updated from 0.27.1 to 0.34.1
 - **Pydantic**: Updated from 2.6.3 to 2.11.3
 - **Pandas**: Updated from 2.2.2 to 2.2.3
