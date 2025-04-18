@@ -2,8 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from solow_simulation import solve_solow_model
-from solow_utils import get_default_parameters
+from solow_core import solve_solow_model, get_default_parameters
 
 def test_simulation_consistency():
     """Test that the refactored simulation produces the same results."""

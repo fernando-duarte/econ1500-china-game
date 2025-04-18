@@ -1,8 +1,20 @@
-# solow_model_run.py: Detailed script for Solow Model integration with classroom UI
+"""
+Detailed script for Solow Model integration with classroom UI.
+This script uses the consolidated core implementation in china-growth-game/economic-model/solow_core.py.
+"""
 
 import numpy as np
 import pandas as pd
-from solow_model import solve_solow_model
+import sys
+import os
+
+# Add economic-model to Python path if it's not already there
+economic_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'china-growth-game/economic-model')
+if economic_model_path not in sys.path:
+    sys.path.insert(0, economic_model_path)
+
+# Import from the consolidated core implementation
+from solow_core import solve_solow_model, get_default_parameters
 
 # Explicit Game Instructions and Prize Announcements
 print("Welcome to China's Growth Game: Saving, Trade, and Prosperity (1980–2025)!")
@@ -26,31 +38,12 @@ initial_conditions = {
     'NX': 3.6
 }
 
-# Parameters explicitly stated
-parameters = {
-    'alpha': 0.3,
-    'delta': 0.1,
-    'g': 0.005,
-    'theta': 0.1453,
-    'phi': 0.1,
-    's': 0.2,
-    'beta': -90,
-    'n': 0.00717,
-    'eta': 0.02
-}
-
-# Exogenous variables explicitly stated
-exogenous_vars = {
-    'exchange_rate': np.linspace(1.5, 7.0, len(years)),
-    'foreign_income_growth': 0.03,
-    'domestic_interest_rate': 0.04,
-    'foreign_interest_rate': 0.08,
-    'openness_ratio_start': 0.1,
-    'fdi_ratio_post_1990': 0.02
-}
+# Get default parameters and override as needed
+parameters = get_default_parameters()
+parameters['s'] = 0.2  # Default savings rate
 
 # Solve the model explicitly
-results_df = solve_solow_model(1980, initial_conditions, parameters, years, {})
+results_df = solve_solow_model(1980, initial_conditions, parameters, years)
 
 # Prepare clear outputs for UI integration
 print("\nNumbers displayed on Student Screens and Professor Dashboard:")

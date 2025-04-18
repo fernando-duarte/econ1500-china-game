@@ -10,6 +10,18 @@ logger = logging.getLogger(__name__)
 import re
 import html
 
+import sys
+import os
+import traceback
+
+# Add economic-model to Python path if it's not already there
+economic_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'china-growth-game/economic-model')
+if economic_model_path not in sys.path:
+    sys.path.insert(0, economic_model_path)
+
+# Import the consolidated Solow model implementation
+from solow_core import calculate_single_round, get_default_parameters
+
 class TeamManager:
     """
     Manages team creation, decision submission, and team state.
@@ -235,41 +247,50 @@ class GameState:
 
     def calculate_team_results(self, team_id: str) -> Dict[str, Any]:
         """Calculate results for a specific team."""
-        # Simplified calculation for demonstration
         team = self.team_manager.get_team_state(team_id)
         current_state = team["current_state"]
 
         # Get the latest decision
         latest_decision = team["decisions"][-1]
         savings_rate = latest_decision["savings_rate"]
+        exchange_rate_policy = latest_decision["exchange_rate_policy"]
 
-        # Simple calculations
-        gdp = current_state["GDP"]
-        capital = current_state["Capital"]
-        labor = current_state["Labor Force"]
+        # Prepare current state for Solow model
+        solow_state = {
+            'Y': current_state["GDP"],
+            'K': current_state["Capital"],
+            'L': current_state["Labor Force"],
+            'H': current_state["Human Capital"],
+            'A': current_state["Productivity (TFP)"]
+        }
 
-        # Cobb-Douglas production function with alpha=0.3
-        output = capital ** 0.3 * labor ** 0.7
+        # Prepare student inputs for Solow model
+        student_inputs = {
+            's': savings_rate,
+            'e_policy': exchange_rate_policy
+        }
 
-        # Investment and consumption
-        investment = savings_rate * output
-        consumption = output - investment
+        # Get default parameters - could be customized per team in the future
+        parameters = get_default_parameters()
 
-        # Next period capital (with 10% depreciation)
-        next_capital = capital * 0.9 + investment
+        # Use the consolidated core model to calculate results
+        result = calculate_single_round(
+            current_state=solow_state,
+            parameters=parameters,
+            student_inputs=student_inputs,
+            year=self.current_year
+        )
 
-        # Next period labor (1% growth)
-        next_labor = labor * 1.01
-
+        # Map the result to the expected output format
         return {
-            "Y_t": output,
-            "I_t": investment,
-            "C_t": consumption,
-            "K_next": next_capital,
-            "L_next": next_labor,
-            "H_next": current_state["Human Capital"] * 1.01,  # 1% growth
-            "A_next": current_state["Productivity (TFP)"] * 1.01,  # 1% growth
-            "NX_t": current_state["Net Exports"] * 1.02  # 2% growth
+            "Y_t": result["Y_t"],           # GDP
+            "I_t": result["I_t"],           # Investment
+            "C_t": result["C_t"],           # Consumption
+            "K_next": result["K_next"],     # Next capital
+            "L_next": result["L_next"],     # Next labor
+            "H_next": result["H_next"],     # Next human capital
+            "A_next": result["A_next"],     # Next productivity
+            "NX_t": result["NX_t"]          # Net exports
         }
 
     def advance_round(self) -> Dict[str, Any]:
