@@ -46,7 +46,7 @@ china-growth-game/
 
 - [Docker](https://www.docker.com/get-started) and Docker Compose
 - [Node.js](https://nodejs.org/) v20.13.1
-- [Python](https://www.python.org/) v3.13.0
+- [Python](https://www.python.org/) v3.12.2
 
 ### Installation
 
@@ -128,4 +128,4 @@ python -m unittest test_model.py
 
 - The backend server uses nodemon for hot reloading
 - The Python API uses uvicorn with reload enabled
-- The Docker setup includes volume mounting for live code changes 
+- The Docker setup includes volume mounting for live code changes

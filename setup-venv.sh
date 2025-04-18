@@ -17,7 +17,7 @@ fi
 
 # Remove existing virtual environments
 echo "Removing existing virtual environments..."
-rm -rf venv-py312 venv-py313 china-growth-game/economic-model/venv china-growth-game/economic-model/new-venv
+rm -rf venv-py312 china-growth-game/economic-model/venv china-growth-game/economic-model/new-venv
 
 # Create a new virtual environment
 echo "Creating new virtual environment with Python 3.12..."

@@ -59,8 +59,7 @@ If you encounter issues with the virtual environment:
 
 Previously, the project used multiple virtual environments:
 - `venv-py312` (Python 3.12)
-- `venv-py313` (Python 3.13)
-- `china-growth-game/economic-model/venv` (Python 3.13)
+- `china-growth-game/economic-model/venv` (Python 3.12)
 - `china-growth-game/economic-model/new-venv` (Python 3.9)
 
 These have been consolidated into a single environment for simplicity and consistency.
