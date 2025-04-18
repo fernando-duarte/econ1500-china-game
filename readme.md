@@ -8,7 +8,7 @@ This project is an educational simulation that allows students to experience fir
 
 ## Project Structure
 
-This project consists of two main components:
+This project consists of two main components with supporting modules:
 
 ### 1. Economic Model (Python)
 
@@ -30,16 +30,19 @@ This project consists of two main components:
   - `src/` - React application source code
   - `run_server.py` - Helper script to start the economic model API
 
-### Additional Components
+### Supporting Modules
 
 - `model/` - Wrapper module that imports from the canonical implementation
+- `scripts/` - Utility scripts for running the model
 - `docs/` - Project documentation
 
 **Note:** The naming difference (`china_growth_game` vs `china-growth-game`) is intentional:
 - `china_growth_game` uses underscores as per Python package naming conventions
 - `china-growth-game` uses hyphens as per JavaScript/Node.js package naming conventions
 
-**Note:** The legacy components have been updated to use the canonical implementation to avoid code duplication and ensure consistency.
+**Note:** All components have been updated to use the canonical implementation to avoid code duplication and ensure consistency.
+
+For a detailed directory structure diagram, see [Project Structure Documentation](docs/project-structure.md).
 
 ### Configuration
 
@@ -160,8 +163,8 @@ Component-specific test runners are also available:
 
 ```bash
 # Economic model tests
-cd china-growth-game/economic-model
-python run_tests.py
+cd china_growth_game
+python -m unittest discover
 
 # Backend tests
 cd backend
@@ -169,7 +172,7 @@ node run_tests.js
 
 # Frontend tests
 cd frontend
-node run_tests.js
+npm test
 ```
 
 ## Deployment

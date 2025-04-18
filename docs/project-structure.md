@@ -13,6 +13,37 @@ The naming difference is intentional and follows the conventions of each languag
 - Python packages typically use underscores (`china_growth_game`)
 - JavaScript/Node.js packages typically use hyphens (`china-growth-game`)
 
+## Directory Structure
+
+```
+.
+├── china_growth_game/           # Python package (canonical implementation)
+│   ├── app.py                  # Main FastAPI application entry point
+│   └── economic_model/         # Core economic simulation engine
+│       ├── app/                # FastAPI application
+│       ├── core/               # Core economic calculations
+│       ├── game/               # Game state management
+│       ├── tests/              # Unit tests
+│       ├── utils/              # Utility functions
+│       └── visualization/      # Visualization tools
+│
+├── china-growth-game/          # JavaScript/React frontend application
+│   ├── app/                    # Node.js Express server
+│   ├── public/                 # Static assets
+│   ├── src/                    # React application source code
+│   └── run_server.py           # Helper script to start the economic model API
+│
+├── model/                      # Wrapper module (imports from canonical implementation)
+│   ├── app.py                  # Wrapper for the FastAPI application
+│   └── game_state.py           # Wrapper for the game state
+│
+├── scripts/                    # Utility scripts
+│   └── solow_model_run.py      # Standalone script for running the Solow model
+│
+└── docs/                       # Project documentation
+    └── project-structure.md    # This document
+```
+
 ## Component Details
 
 ### 1. Economic Model (Python)
