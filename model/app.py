@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 canonical_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                              'china_growth_game', 'economic_model', 'app')
 
-# Add the canonical path to sys.path if it's not already there
+# Note: We're keeping the sys.path modification for backward compatibility
+# In a proper package structure, this would be handled by proper imports
 if canonical_path not in sys.path:
     sys.path.insert(0, canonical_path)
     logger.info(f"Added canonical path to sys.path: {canonical_path}")
@@ -48,6 +49,8 @@ try:
 
     # Import the GameState class from the canonical implementation
     from game_state import GameState
+    # Import JSON utilities for potential future use
+    # These are imported here to ensure they're available if needed
     from china_growth_game.economic_model.utils.json_utils import (
         convert_numpy_values,
         numpy_safe_json_dumps,
@@ -175,7 +178,7 @@ try:
     # We're not actually overriding the endpoint, just adding our own handler
     # that will be called before the canonical one due to middleware order
     @app.post("/teams/create")
-    def create_team_with_api_key(request: TeamCreateRequest, api_key: str = Depends(verify_admin_api_key)):  # api_key used for authorization
+    def create_team_with_api_key(request: TeamCreateRequest, api_key: str = Depends(verify_admin_api_key)) -> dict:  # api_key used for authorization
         """Create a new team with API key."""
         try:
             team = game_state.create_team(request.team_name)
@@ -298,14 +301,14 @@ def health_check():
 
 # Game flow endpoints
 @app.post("/game/init", response_model=GameStateResponse)
-def initialize_game(api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
+def initialize_game(api_key: str = Depends(verify_admin_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Initialize a new game."""
     global game_state
     game_state = GameState()  # Reset the game state
     return game_state.get_game_state()
 
 @app.post("/game/start", response_model=GameStateResponse)
-def start_game(api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
+def start_game(api_key: str = Depends(verify_admin_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Start the game with registered teams."""
     try:
         result = game_state.start_game()
@@ -314,7 +317,7 @@ def start_game(api_key: str = Depends(verify_admin_api_key)):  # api_key is used
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/game/next-round")
-def advance_to_next_round(api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
+def advance_to_next_round(api_key: str = Depends(verify_admin_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Advance to the next round, processing all team decisions."""
     try:
         result = game_state.advance_round()
@@ -343,7 +346,7 @@ def get_game_state():
 
 # Team management endpoints
 @app.post("/teams/create")
-def create_team(request: TeamCreateRequest, api_key: str = Depends(verify_admin_api_key)):  # api_key is used by the dependency for authorization
+def create_team(request: TeamCreateRequest, api_key: str = Depends(verify_admin_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Create a new team."""
     try:
         team = game_state.create_team(request.team_name)
@@ -394,7 +397,7 @@ def submit_decision(request: DecisionSubmitRequest, api_key: str = Depends(get_a
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/teams/{team_id}")
-def get_team_state(team_id: str, api_key: str = Depends(verify_team_api_key)):  # api_key is used by the dependency for authorization
+def get_team_state(team_id: str, api_key: str = Depends(verify_team_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Get the state of a specific team."""
     try:
         return game_state.get_team_state(team_id)
@@ -402,7 +405,7 @@ def get_team_state(team_id: str, api_key: str = Depends(verify_team_api_key)):  
         raise HTTPException(status_code=404, detail=str(e))
 
 @app.post("/teams/{team_id}/edit-name")
-def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None, api_key: str = Depends(verify_team_api_key)):  # api_key is used by the dependency for authorization
+def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None, api_key: str = Depends(verify_team_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Edit a team's name, enforcing uniqueness and appropriateness."""
     try:
         team = game_state.team_manager.edit_team_name(team_id, request.new_name)
@@ -462,7 +465,7 @@ def get_rankings():
     return game_state.rankings_manager.rankings
 
 @app.get("/results/visualizations/{team_id}")
-def get_team_visualizations(team_id: str, api_key: str = Depends(verify_team_api_key)):  # api_key is used by the dependency for authorization
+def get_team_visualizations(team_id: str, api_key: str = Depends(verify_team_api_key)) -> dict:  # api_key is used by the dependency for authorization
     """Get visualization data for a specific team."""
     try:
         return game_state.get_team_visualizations(team_id)

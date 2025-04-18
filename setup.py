@@ -5,7 +5,7 @@ Setup script for the China Growth Game package.
 from setuptools import setup, find_packages
 
 setup(
-    name="china-growth-game",
+    name="china_growth_game",
     version="1.0.0",
     packages=find_packages(),
     install_requires=[

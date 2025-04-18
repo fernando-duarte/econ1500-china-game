@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
 Run script for the China Growth Game API.
+
+This script starts the FastAPI application using uvicorn.
 """
 
 import uvicorn

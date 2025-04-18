@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 """
 Test runner for the China Growth Game package.
+
+This script discovers and runs all tests in the china_growth_game package.
+It supports verbose output and coverage reporting.
 """
 
 import unittest
 import sys
 import argparse
+# Type hints would be used if we refactored this into functions
 
 if __name__ == "__main__":
     # Parse command line arguments

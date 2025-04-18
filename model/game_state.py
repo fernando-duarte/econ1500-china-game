@@ -13,7 +13,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Add the package to Python path if it's not already there
+# Note: We're keeping the sys.path modification for backward compatibility
+# In a proper package structure, this would be handled by proper imports
 package_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if package_path not in sys.path:
     sys.path.insert(0, package_path)
@@ -24,10 +25,11 @@ from china_growth_game.economic_model.game.team_management import TeamManager
 from china_growth_game.economic_model.game.events_manager import EventsManager
 from china_growth_game.economic_model.game.rankings_manager import RankingsManager
 from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
+# Import for potential future use
 from china_growth_game.economic_model.utils.json_utils import convert_numpy_values
 
 # Re-export the classes for backwards compatibility
-__all__ = ['GameState', 'TeamManager', 'EventsManager', 'RankingsManager', 'VisualizationManager']
+__all__ = ['GameState', 'TeamManager', 'EventsManager', 'RankingsManager', 'VisualizationManager', 'convert_numpy_values']
 
 # If you need to extend the GameState with additional functionality, you can do so here:
 # class ExtendedGameState(GameState):

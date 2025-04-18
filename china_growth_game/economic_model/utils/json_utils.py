@@ -7,13 +7,13 @@ particularly for numpy types.
 
 import json
 import numpy as np
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 from fastapi.responses import JSONResponse
 
 class NumpyEncoder(json.JSONEncoder):
     """
     Custom JSON encoder that handles numpy types.
-    
+
     This encoder converts numpy types to Python native types:
     - np.integer -> int
     - np.floating -> float
@@ -33,7 +33,7 @@ class NumpyEncoder(json.JSONEncoder):
 class CustomJSONResponse(JSONResponse):
     """
     Custom JSON response class that uses the NumpyEncoder.
-    
+
     This class ensures that all responses from the API can handle numpy types.
     """
     def render(self, content: Any) -> bytes:
@@ -49,10 +49,10 @@ class CustomJSONResponse(JSONResponse):
 def convert_numpy_values(obj: Any) -> Any:
     """
     Recursively convert numpy values to Python native types for JSON serialization.
-    
+
     Args:
         obj: The object to convert
-        
+
     Returns:
         The converted object with numpy types converted to Python native types
     """
@@ -74,23 +74,26 @@ def convert_numpy_values(obj: Any) -> Any:
 def numpy_safe_json_dumps(obj: Any) -> str:
     """
     Convert an object to a JSON string, handling numpy types.
-    
+
     Args:
         obj: The object to convert
-        
+
     Returns:
         A JSON string representation of the object
     """
     return json.dumps(obj, cls=NumpyEncoder)
 
-def numpy_safe_json_loads(json_str: str) -> Any:
+def numpy_safe_json_loads(json_str: str) -> Dict[str, Any]:
     """
     Parse a JSON string into an object.
-    
+
+    This is a wrapper around json.loads for API consistency.
+    In the future, this could be extended to handle special deserialization needs.
+
     Args:
         json_str: The JSON string to parse
-        
+
     Returns:
-        The parsed object
+        The parsed object as a dictionary
     """
     return json.loads(json_str)
