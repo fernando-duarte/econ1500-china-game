@@ -1,6 +1,6 @@
 /**
  * Unified Server for China's Growth Game
- * 
+ *
  * This server combines the functionality of both existing server implementations:
  * - Socket.IO real-time communication from backend/server.js
  * - RESTful API structure from china-growth-game/app/server.js
@@ -13,6 +13,9 @@ const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const axios = require('axios');
+const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Load economic model service
@@ -35,6 +38,36 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
+
+// CSRF protection for API endpoints
+const csrfProtection = csrf({ cookie: { sameSite: 'strict', secure: process.env.NODE_ENV === 'production' } });
+
+// Add CSRF protection to all API routes except GET requests
+app.use('/api', (req, res, next) => {
+  // Skip CSRF for GET requests
+  if (req.method === 'GET') {
+    return next();
+  }
+  csrfProtection(req, res, next);
+});
+
+// Provide CSRF token for client
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+// Rate limiting middleware
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
 
 // Socket.IO setup
 const io = new Server(server, {
@@ -60,12 +93,54 @@ const lastProcessed = {
   nextRound: null
 };
 
+// Idempotency helpers
+function isTeamDecisionProcessed(teamId, round) {
+  return lastProcessed.updateTeam[teamId] === round;
+}
+
+function markTeamDecisionProcessed(teamId, round) {
+  lastProcessed.updateTeam[teamId] = round;
+}
+
+function resetTeamDecisionProcessed(teamId) {
+  lastProcessed.updateTeam[teamId] = null;
+}
+
+function isGameStartProcessed() {
+  return lastProcessed.startGame === true;
+}
+
+function markGameStartProcessed() {
+  lastProcessed.startGame = true;
+}
+
+function resetGameStartProcessed() {
+  lastProcessed.startGame = false;
+}
+
+function isRoundAdvanceProcessed(round) {
+  return lastProcessed.nextRound === round;
+}
+
+function markRoundAdvanceProcessed(round) {
+  lastProcessed.nextRound = round;
+}
+
+function resetRoundAdvanceProcessed() {
+  lastProcessed.nextRound = null;
+}
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   // Join team room
   socket.on('joinTeam', (teamId) => {
+    // Validate teamId
+    if (!teamId || typeof teamId !== 'string') {
+      return socket.emit('error', { message: 'Invalid team ID' });
+    }
+
     socket.join(`team-${teamId}`);
 
     // Initialize team if not exists
@@ -88,30 +163,71 @@ io.on('connection', (socket) => {
 
   // Handle team decisions
   socket.on('updateTeam', async (data) => {
+    // Validate input
     const { teamId, savingsRate, exchangeRate } = data;
-    // Idempotency: Only process if this round is new for this team
-    if (gameState.teams[teamId] && lastProcessed.updateTeam[teamId] !== gameState.round) {
-      lastProcessed.updateTeam[teamId] = gameState.round;
-      if (gameState.teams[teamId]) {
-        try {
-          // Submit the decision
-          const decision = await economicModelService.submitDecision(
-            teamId, 
-            savingsRate, 
-            exchangeRate === 'fixed' ? 'market' : exchangeRate
-          );
 
-          // Update team data
-          gameState.teams[teamId].savingsRate = savingsRate;
-          gameState.teams[teamId].exchangeRate = exchangeRate;
+    if (!teamId || typeof teamId !== 'string') {
+      return socket.emit('error', { message: 'Invalid team ID' });
+    }
 
-          // Broadcast updated state to team members
-          io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
-          io.to(`team-${teamId}`).emit('decisionSubmitted', { success: true });
-        } catch (error) {
-          console.error('Error submitting decision:', error.message);
-          socket.emit('error', { message: 'Failed to submit decision' });
-        }
+    if (typeof savingsRate !== 'number') {
+      return socket.emit('error', { message: 'Savings rate must be a number' });
+    }
+
+    if (savingsRate < 0.01 || savingsRate > 0.99) {
+      return socket.emit('error', { message: 'Savings rate must be between 1% and 99%' });
+    }
+
+    if (!exchangeRate || typeof exchangeRate !== 'string') {
+      return socket.emit('error', { message: 'Invalid exchange rate policy' });
+    }
+
+    if (!['fixed', 'market', 'undervalue', 'overvalue'].includes(exchangeRate)) {
+      return socket.emit('error', { message: 'Exchange rate policy must be one of: fixed, market, undervalue, overvalue' });
+    }
+
+    // Set a timeout for the operation
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Operation timed out')), 5000);
+    });
+
+    try {
+      // Race the operation against the timeout
+      await Promise.race([
+        (async () => {
+          // Idempotency: Only process if this round is new for this team
+          if (gameState.teams[teamId] && !isTeamDecisionProcessed(teamId, gameState.round)) {
+            markTeamDecisionProcessed(teamId, gameState.round);
+            if (gameState.teams[teamId]) {
+              // Submit the decision
+              const decision = await economicModelService.submitDecision(
+                teamId,
+                savingsRate,
+                exchangeRate === 'fixed' ? 'market' : exchangeRate
+              );
+
+              // Update team data
+              gameState.teams[teamId].savingsRate = savingsRate;
+              gameState.teams[teamId].exchangeRate = exchangeRate;
+
+              // Broadcast updated state to team members
+              io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
+              io.to(`team-${teamId}`).emit('decisionSubmitted', { success: true });
+            }
+          }
+        })(),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      console.error('Error or timeout in updateTeam:', error.message);
+      socket.emit('error', {
+        message: error.message === 'Operation timed out' ?
+          'Request timed out' : 'Failed to submit decision'
+      });
+
+      // If it was a timeout, we should reset the idempotency flag
+      if (error.message === 'Operation timed out' && isTeamDecisionProcessed(teamId, gameState.round)) {
+        resetTeamDecisionProcessed(teamId);
       }
     }
   });
@@ -119,25 +235,39 @@ io.on('connection', (socket) => {
   // Professor control events
   socket.on('startGame', async () => {
     // Idempotency: Only process if not already started
-    if (!gameState.isRunning && lastProcessed.startGame !== true) {
-      lastProcessed.startGame = true;
+    if (!gameState.isRunning && !isGameStartProcessed()) {
+      markGameStartProcessed();
+
+      // Set a timeout for the operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operation timed out')), 5000);
+      });
 
       try {
-        // Start the game
-        const result = await economicModelService.startGame();
+        // Race the operation against the timeout
+        await Promise.race([
+          (async () => {
+            // Start the game
+            const result = await economicModelService.startGame();
 
-        // Update our local game state
-        gameState.isRunning = true;
-        gameState.round = result.current_round;
-        gameState.timer = 300;
+            // Update our local game state
+            gameState.isRunning = true;
+            gameState.round = result.current_round;
+            gameState.timer = 300;
 
-        // Broadcast updated game state
-        io.emit('gameState', gameState);
+            // Broadcast updated game state
+            io.emit('gameState', gameState);
+          })(),
+          timeoutPromise
+        ]);
       } catch (error) {
-        console.error('Error starting game:', error.message);
-        socket.emit('error', { message: 'Failed to start game' });
+        console.error('Error or timeout in startGame:', error.message);
+        socket.emit('error', {
+          message: error.message === 'Operation timed out' ?
+            'Request timed out' : 'Failed to start game'
+        });
         // Reset idempotency flag if there was an error
-        lastProcessed.startGame = false;
+        resetGameStartProcessed();
       }
     }
   });
@@ -149,48 +279,82 @@ io.on('connection', (socket) => {
 
   socket.on('nextRound', async () => {
     // Idempotency: Only process if round is not already advanced
-    if (lastProcessed.nextRound !== gameState.round && gameState.round < 10) {
-      lastProcessed.nextRound = gameState.round;
+    if (!isRoundAdvanceProcessed(gameState.round) && gameState.round < 10) {
+      markRoundAdvanceProcessed(gameState.round);
+
+      // Set a timeout for the operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operation timed out')), 8000); // Longer timeout for round advancement
+      });
 
       try {
-        // Advance the round
-        const result = await economicModelService.advanceRound();
-        
-        // Get the updated game state
-        const modelGameState = await economicModelService.getGameState();
+        // Race the operation against the timeout
+        await Promise.race([
+          (async () => {
+            // Advance the round
+            const result = await economicModelService.advanceRound();
 
-        // Update our local game state
-        gameState.round = modelGameState.current_round;
-        gameState.timer = 300;
+            // Get the updated game state
+            const modelGameState = await economicModelService.getGameState();
 
-        // Update all teams with data from the model
-        Object.keys(modelGameState.teams).forEach(teamId => {
-          if (gameState.teams[teamId]) {
-            const modelTeam = modelGameState.teams[teamId];
-            const team = gameState.teams[teamId];
+            // Update our local game state
+            gameState.round = modelGameState.current_round;
+            gameState.timer = 300;
 
-            // Save history
-            team.history.push({
-              round: gameState.round - 1,
-              savingsRate: team.savingsRate,
-              exchangeRate: team.exchangeRate,
-              output: team.output,
-              consumption: team.consumption
+            // Get all team data in a single pass
+            const teamUpdates = {};
+            Object.keys(modelGameState.teams).forEach(teamId => {
+              if (gameState.teams[teamId]) {
+                const modelTeam = modelGameState.teams[teamId];
+                teamUpdates[teamId] = {
+                  output: modelTeam.current_state.GDP,
+                  consumption: modelTeam.current_state.Consumption,
+                  capital: modelTeam.current_state.Capital,
+                  labor: modelTeam.current_state['Labor Force'],
+                  netExports: modelTeam.current_state['Net Exports'],
+                  productivity: modelTeam.current_state['Productivity (TFP)'],
+                  humanCapital: modelTeam.current_state['Human Capital']
+                };
+              }
             });
 
-            // Update team data from model
-            team.output = modelTeam.current_state.GDP;
-            team.consumption = modelTeam.current_state.Consumption;
-            team.capital = modelTeam.current_state.Capital;
-            team.labor = modelTeam.current_state['Labor Force'];
-          }
+            // Apply updates and save history in a single pass
+            Object.keys(teamUpdates).forEach(teamId => {
+              const team = gameState.teams[teamId];
+              const updates = teamUpdates[teamId];
+
+              // Save history
+              team.history.push({
+                round: gameState.round - 1,
+                savingsRate: team.savingsRate,
+                exchangeRate: team.exchangeRate,
+                output: team.output,
+                consumption: team.consumption,
+                netExports: team.netExports,
+                capital: team.capital,
+                labor: team.labor
+              });
+
+              // Apply updates
+              Object.assign(team, updates);
+            });
+
+            // Broadcast updated game state
+            io.emit('gameState', gameState);
+          })(),
+          timeoutPromise
+        ]);
+      } catch (error) {
+        console.error('Error or timeout in nextRound:', error.message);
+        socket.emit('error', {
+          message: error.message === 'Operation timed out' ?
+            'Request timed out' : 'Failed to advance round'
         });
 
-        // Broadcast updated game state
-        io.emit('gameState', gameState);
-      } catch (error) {
-        console.error('Error advancing round:', error.message);
-        socket.emit('error', { message: 'Failed to advance round' });
+        // Reset idempotency flag if there was a timeout
+        if (error.message === 'Operation timed out') {
+          resetRoundAdvanceProcessed();
+        }
       }
     } else if (gameState.round >= 10 && !gameState.isRunning) {
       // End of game
@@ -219,6 +383,21 @@ function calculateFinalScores() {
   return scores;
 }
 
+// Helper function for consistent error handling
+function handleError(error, res = null, socket = null, errorMessage = 'An error occurred') {
+  console.error(`${errorMessage}:`, error.message);
+
+  // For REST API
+  if (res) {
+    return res.status(500).json({ success: false, message: errorMessage });
+  }
+
+  // For Socket.IO
+  if (socket) {
+    return socket.emit('error', { message: errorMessage });
+  }
+}
+
 // ==========================
 // REST API Endpoints
 // ==========================
@@ -234,7 +413,7 @@ app.get('/api/model/health', async (req, res) => {
     const health = await economicModelService.healthCheck();
     res.status(200).json(health);
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    handleError(error, res, null, 'Failed to check model health');
   }
 });
 
@@ -246,46 +425,81 @@ app.get('/api/game', (req, res) => {
 app.post('/api/game/start', async (req, res) => {
   try {
     // Use the same logic as the socket event
-    if (!gameState.isRunning && lastProcessed.startGame !== true) {
-      lastProcessed.startGame = true;
+    if (!gameState.isRunning && !isGameStartProcessed()) {
+      markGameStartProcessed();
       const result = await economicModelService.startGame();
       gameState.isRunning = true;
       gameState.round = result.current_round;
       gameState.timer = 300;
-      
+
       // Broadcast to all clients
       io.emit('gameState', gameState);
-      
+
       res.status(200).json({ success: true, game: gameState });
     } else {
       res.status(400).json({ success: false, message: 'Game already started' });
     }
   } catch (error) {
-    lastProcessed.startGame = false;
-    res.status(500).json({ success: false, message: error.message });
+    resetGameStartProcessed();
+    handleError(error, res, null, 'Failed to start game');
   }
 });
 
 app.post('/api/game/advance', async (req, res) => {
   try {
     // Use the same logic as the socket event
-    if (lastProcessed.nextRound !== gameState.round && gameState.round < 10) {
-      lastProcessed.nextRound = gameState.round;
+    if (!isRoundAdvanceProcessed(gameState.round) && gameState.round < 10) {
+      markRoundAdvanceProcessed(gameState.round);
       const result = await economicModelService.advanceRound();
-      
+
       // Get updated game state
       const modelGameState = await economicModelService.getGameState();
-      
+
       // Update our state
       gameState.round = modelGameState.current_round;
       gameState.timer = 300;
-      
-      // Process team updates
-      // ...
-      
+
+      // Get all team data in a single pass
+      const teamUpdates = {};
+      Object.keys(modelGameState.teams).forEach(teamId => {
+        if (gameState.teams[teamId]) {
+          const modelTeam = modelGameState.teams[teamId];
+          teamUpdates[teamId] = {
+            output: modelTeam.current_state.GDP,
+            consumption: modelTeam.current_state.Consumption,
+            capital: modelTeam.current_state.Capital,
+            labor: modelTeam.current_state['Labor Force'],
+            netExports: modelTeam.current_state['Net Exports'],
+            productivity: modelTeam.current_state['Productivity (TFP)'],
+            humanCapital: modelTeam.current_state['Human Capital']
+          };
+        }
+      });
+
+      // Apply updates and save history in a single pass
+      Object.keys(teamUpdates).forEach(teamId => {
+        const team = gameState.teams[teamId];
+        const updates = teamUpdates[teamId];
+
+        // Save history
+        team.history.push({
+          round: gameState.round - 1,
+          savingsRate: team.savingsRate,
+          exchangeRate: team.exchangeRate,
+          output: team.output,
+          consumption: team.consumption,
+          netExports: team.netExports,
+          capital: team.capital,
+          labor: team.labor
+        });
+
+        // Apply updates
+        Object.assign(team, updates);
+      });
+
       // Broadcast to all clients
       io.emit('gameState', gameState);
-      
+
       res.status(200).json({ success: true, game: gameState });
     } else if (gameState.round >= 10) {
       res.status(400).json({ success: false, message: 'Game already ended' });
@@ -293,7 +507,7 @@ app.post('/api/game/advance', async (req, res) => {
       res.status(400).json({ success: false, message: 'Round already processed' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    handleError(error, res, null, 'Failed to advance round');
   }
 });
 
@@ -315,7 +529,7 @@ app.post('/api/teams', async (req, res) => {
   try {
     const { name } = req.body;
     const team = await economicModelService.createTeam(name);
-    
+
     // Add to local state
     const teamId = team.id;
     gameState.teams[teamId] = {
@@ -326,10 +540,10 @@ app.post('/api/teams', async (req, res) => {
       score: 0,
       history: []
     };
-    
+
     res.status(201).json({ success: true, team: gameState.teams[teamId] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    handleError(error, res, null, 'Failed to create team');
   }
 });
 
@@ -337,34 +551,34 @@ app.post('/api/teams/:teamId/decisions', async (req, res) => {
   try {
     const { teamId } = req.params;
     const { savingsRate, exchangeRatePolicy } = req.body;
-    
+
     if (!gameState.teams[teamId]) {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
-    
+
     // Process the same way as socket
-    if (lastProcessed.updateTeam[teamId] !== gameState.round) {
-      lastProcessed.updateTeam[teamId] = gameState.round;
-      
+    if (!isTeamDecisionProcessed(teamId, gameState.round)) {
+      markTeamDecisionProcessed(teamId, gameState.round);
+
       const decision = await economicModelService.submitDecision(
         teamId,
         savingsRate,
-        exchangeRatePolicy
+        exchangeRatePolicy === 'fixed' ? 'market' : exchangeRatePolicy
       );
-      
+
       // Update local state
       gameState.teams[teamId].savingsRate = savingsRate;
       gameState.teams[teamId].exchangeRate = exchangeRatePolicy;
-      
+
       // Emit to team channel
       io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
-      
+
       res.status(201).json({ success: true, decision });
     } else {
       res.status(400).json({ success: false, message: 'Decision already submitted for this round' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    handleError(error, res, null, 'Failed to submit decision');
   }
 });
 
@@ -373,7 +587,7 @@ const buildPath = path.join(__dirname, 'build');
 if (require('fs').existsSync(buildPath)) {
   console.log('Serving static files from', buildPath);
   app.use(express.static(buildPath));
-  
+
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
@@ -389,4 +603,4 @@ if (require('fs').existsSync(buildPath)) {
 // Start server
 server.listen(port, () => {
   console.log(`Unified server listening on port ${port}`);
-}); 
+});

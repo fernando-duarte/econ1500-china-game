@@ -64,8 +64,13 @@ try:
     API_KEY_NAME = "X-API-Key"
     api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-    # In production, this would be stored securely and not in code
-    ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "admin-dev-key")
+    # Get API key from environment variable
+    ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
+    if not ADMIN_API_KEY:
+        if os.environ.get("ENVIRONMENT") == "production":
+            raise ValueError("ADMIN_API_KEY must be set in production")
+        else:
+            ADMIN_API_KEY = "admin-dev-key"  # Only for development
 
     # Team authorization mapping (in production, this would be in a database)
     team_api_keys = {}
@@ -170,13 +175,24 @@ try:
 
             # Generate and store API key for this team
             import secrets
+            import hashlib
+            import time
+
+            # Generate a secure API key
             team_api_key = secrets.token_urlsafe(32)
             team_id = team["team_id"]
             team_api_keys[team_id] = team_api_key
 
-            # Add API key to response (in production, this would be securely transmitted)
+            # Create a temporary access token with expiration
+            token_expiry = int(time.time()) + 300  # 5 minutes
+            token_data = f"{team_id}:{token_expiry}"
+            token_signature = hashlib.sha256(f"{token_data}:{ADMIN_API_KEY}".encode()).hexdigest()
+            secure_token = f"{token_data}:{token_signature}"
+
+            # Add secure token to response instead of raw API key
             response = dict(team)
-            response["api_key"] = team_api_key
+            response["secure_token"] = secure_token
+            response["token_expiry"] = token_expiry
 
             return response
         except ValueError as e:
@@ -327,13 +343,24 @@ def create_team(request: TeamCreateRequest, api_key: str = Depends(verify_admin_
 
         # Generate and store API key for this team
         import secrets
+        import hashlib
+        import time
+
+        # Generate a secure API key
         team_api_key = secrets.token_urlsafe(32)
         team_id = team["team_id"]
         team_api_keys[team_id] = team_api_key
 
-        # Add API key to response (in production, this would be securely transmitted)
+        # Create a temporary access token with expiration
+        token_expiry = int(time.time()) + 300  # 5 minutes
+        token_data = f"{team_id}:{token_expiry}"
+        token_signature = hashlib.sha256(f"{token_data}:{ADMIN_API_KEY}".encode()).hexdigest()
+        secure_token = f"{token_data}:{token_signature}"
+
+        # Add secure token to response instead of raw API key
         response = dict(team)
-        response["api_key"] = team_api_key
+        response["secure_token"] = secure_token
+        response["token_expiry"] = token_expiry
 
         return response
     except ValueError as e:

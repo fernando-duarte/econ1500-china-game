@@ -58,7 +58,7 @@ This project is an educational simulation that allows students to experience fir
 - Secrets management for production credentials (HashiCorp Vault/AWS Secrets Manager)
 - API key-based authentication and role-based authorization
 - Comprehensive input validation and sanitization
-- CORS restrictions to prevent cross-site request forgery
+- CORS restrictions and CSRF protection to prevent cross-site attacks
 - Rate limiting to prevent API abuse
 - Non-root Docker containers with health checks
 - Secure error handling that doesn't expose implementation details
