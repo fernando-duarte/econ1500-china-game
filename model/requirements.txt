@@ -1,14 +1,1 @@
-# Auto-generated from versions.yaml
-# DO NOT EDIT DIRECTLY
-
-fastapi==0.115.12
-uvicorn==0.34.1
-numpy==1.26.4
-pandas==2.2.3
-matplotlib==3.9.4
-pydantic==2.11.3
-python-dotenv==1.1.0
-typing-extensions==4.13.2
-pytest==7.4.0
-limiter==0.1.2
-requests==2.31.0
+../requirements.txt
