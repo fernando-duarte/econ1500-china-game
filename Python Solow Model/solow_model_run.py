@@ -13,8 +13,9 @@ economic_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspa
 if economic_model_path not in sys.path:
     sys.path.insert(0, economic_model_path)
 
-# Import from the consolidated core implementation
-from solow_core import solve_solow_model, get_default_parameters
+# Import from the consolidated core implementation and simulation wrapper
+from solow_core import get_default_parameters
+from solow_simulation import run_simulation
 
 # Explicit Game Instructions and Prize Announcements
 print("Welcome to China's Growth Game: Saving, Trade, and Prosperity (1980–2025)!")
@@ -42,8 +43,8 @@ initial_conditions = {
 parameters = get_default_parameters()
 parameters['s'] = 0.2  # Default savings rate
 
-# Solve the model explicitly
-results_df = solve_solow_model(1980, initial_conditions, parameters, years)
+# Solve the model explicitly using the simulation wrapper
+results_df = run_simulation(initial_conditions, parameters, years)
 
 # Prepare clear outputs for UI integration
 print("\nNumbers displayed on Student Screens and Professor Dashboard:")

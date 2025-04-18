@@ -5,44 +5,110 @@ This is the definitive source for all economic calculations in the game.
 import numpy as np
 import pandas as pd
 import logging
+from typing import Dict, List, Any, Tuple, Union, Optional
+
+# Import constants from centralized file
+from constants import (
+    E_1980, Y_STAR_1980, DEFAULT_PARAMS,
+    POLICY_MULTIPLIERS
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define base constants for NX calculation
-E_1980 = 1.5  # Baseline exchange rate in 1980
-Y_STAR_1980 = 1000  # Baseline foreign income in 1980
+# =============================================================================
+# UTILITY FUNCTIONS - General helpers and parameter management
+# =============================================================================
+def get_default_parameters() -> Dict[str, float]:
+    """Return default parameters for the Solow model."""
+    return DEFAULT_PARAMS.copy()
 
-# Default parameters - centralized definition
-DEFAULT_PARAMS = {
-    'alpha': 0.3,           # Capital share in production
-    'delta': 0.1,           # Depreciation rate
-    'g': 0.005,             # Base productivity growth
-    'theta': 0.1453,        # Effect of openness on productivity
-    'phi': 0.1,             # Effect of FDI on productivity
-    'n': 0.00717,           # Labor force growth rate
-    'eta': 0.02,            # Human capital growth rate
-    'X0': 18.1,             # Initial exports
-    'M0': 14.5,             # Initial imports
-    'epsilon_x': 1.5,       # Exchange rate elasticity of exports
-    'epsilon_m': 1.2,       # Exchange rate elasticity of imports
-    'mu_x': 1.0,            # Foreign income elasticity of exports
-    'mu_m': 1.0,            # Domestic income elasticity of imports
-    'Y_1980': Y_STAR_1980   # Initial foreign income
-}
+def initialize_arrays(initial_conditions: Dict[str, float], num_periods: int) -> Tuple[np.ndarray, ...]:
+    """
+    Initialize arrays for Solow model simulation.
+    
+    Args:
+        initial_conditions: Dictionary with initial values for Y, K, L, H, A
+        num_periods: Number of periods to simulate
+        
+    Returns:
+        Tuple of numpy arrays for Y, K, L, H, A, NX, C, I
+    """
+    Y = np.zeros(num_periods)
+    K = np.zeros(num_periods)
+    L = np.zeros(num_periods)
+    H = np.zeros(num_periods)
+    A = np.zeros(num_periods)
+    NX = np.zeros(num_periods)
+    C = np.zeros(num_periods)
+    I = np.zeros(num_periods)
+    
+    # Initialize first period values
+    Y[0] = initial_conditions.get('Y', 0)
+    K[0] = initial_conditions.get('K', 0)
+    L[0] = initial_conditions.get('L', 0)
+    H[0] = initial_conditions.get('H', 0)
+    A[0] = initial_conditions.get('A', 0)
+    NX[0] = initial_conditions.get('NX', 0)
+    
+    return Y, K, L, H, A, NX, C, I
 
-# Core production function calculations
-def calculate_production(A, K, L, H, alpha):
-    """Calculate production using the Cobb-Douglas function."""
+# =============================================================================
+# CORE ECONOMIC FUNCTIONS - Pure economic calculations
+# =============================================================================
+def calculate_production(A: float, K: float, L: float, H: float, alpha: float) -> float:
+    """
+    Calculate production using the Cobb-Douglas function.
+    
+    Args:
+        A: Total factor productivity
+        K: Capital stock
+        L: Labor force
+        H: Human capital
+        alpha: Capital share parameter
+        
+    Returns:
+        Y: Output (GDP)
+    """
     K_safe = max(0, K)
     Y = A * (K_safe**alpha) * ((L * H)**(1 - alpha))
     return max(0, Y)  # Ensure GDP is non-negative
 
-def calculate_net_exports(Y, Y_initial, exchange_rate, exchange_rate_initial, 
-                        foreign_income, foreign_income_initial, X0, M0, 
-                        epsilon_x, epsilon_m, mu_x, mu_m):
-    """Calculate net exports based on current state and parameters."""
+def calculate_net_exports(
+    Y: float, 
+    Y_initial: float, 
+    exchange_rate: float, 
+    exchange_rate_initial: float, 
+    foreign_income: float, 
+    foreign_income_initial: float, 
+    X0: float, 
+    M0: float, 
+    epsilon_x: float, 
+    epsilon_m: float, 
+    mu_x: float, 
+    mu_m: float
+) -> float:
+    """
+    Calculate net exports based on current state and parameters.
+    
+    Args:
+        Y: Current GDP
+        Y_initial: Initial/base GDP
+        exchange_rate: Current exchange rate
+        exchange_rate_initial: Initial/base exchange rate
+        foreign_income: Current foreign income
+        foreign_income_initial: Initial/base foreign income
+        X0: Initial exports
+        M0: Initial imports
+        epsilon_x: Exchange rate elasticity of exports
+        epsilon_m: Exchange rate elasticity of imports
+        mu_x: Foreign income elasticity of exports
+        mu_m: Domestic income elasticity of imports
+        
+    Returns:
+        NX: Net exports
+    """
     Y_safe = max(Y, 1e-6)
     Y_initial_safe = max(Y_initial, 1e-6)
     
@@ -51,8 +117,20 @@ def calculate_net_exports(Y, Y_initial, exchange_rate, exchange_rate_initial,
     
     return exports_term - imports_term
 
-def calculate_capital_next(K, Y, NX, s, delta):
-    """Calculate next period capital stock."""
+def calculate_capital_next(K: float, Y: float, NX: float, s: float, delta: float) -> float:
+    """
+    Calculate next period capital stock.
+    
+    Args:
+        K: Current capital stock
+        Y: Current GDP
+        NX: Current net exports
+        s: Savings rate
+        delta: Depreciation rate
+        
+    Returns:
+        K_next: Next period capital stock
+    """
     K_safe = max(0, K)
     I = s * Y + NX
     
@@ -62,75 +140,131 @@ def calculate_capital_next(K, Y, NX, s, delta):
         
     return (1 - delta) * K_safe + I
 
-def calculate_labor_next(L, n):
-    """Calculate next period labor force."""
+def calculate_labor_next(L: float, n: float) -> float:
+    """
+    Calculate next period labor force.
+    
+    Args:
+        L: Current labor force
+        n: Labor force growth rate
+        
+    Returns:
+        L_next: Next period labor force
+    """
     return L * (1 + n)
 
-def calculate_human_capital_next(H, eta):
-    """Calculate next period human capital."""
+def calculate_human_capital_next(H: float, eta: float) -> float:
+    """
+    Calculate next period human capital.
+    
+    Args:
+        H: Current human capital
+        eta: Human capital growth rate
+        
+    Returns:
+        H_next: Next period human capital
+    """
     return H * (1 + eta)
 
-def calculate_tfp_next(A, g, theta, openness_ratio, phi, fdi_ratio):
-    """Calculate next period total factor productivity (TFP)."""
+def calculate_tfp_next(A: float, g: float, theta: float, openness_ratio: float, phi: float, fdi_ratio: float) -> float:
+    """
+    Calculate next period total factor productivity (TFP).
+    
+    Args:
+        A: Current TFP
+        g: Base productivity growth rate
+        theta: Effect of openness on productivity
+        openness_ratio: Openness ratio (trade/GDP)
+        phi: Effect of FDI on productivity
+        fdi_ratio: FDI ratio (FDI/GDP)
+        
+    Returns:
+        A_next: Next period TFP
+    """
     return A * (1 + g + theta * openness_ratio + phi * fdi_ratio)
 
-# Environmental and policy calculations
-def calculate_exchange_rate(year, e_policy):
-    """Calculate exchange rate based on policy and year"""
+# =============================================================================
+# ENVIRONMENTAL AND POLICY FUNCTIONS - Game-specific calculations
+# =============================================================================
+def calculate_exchange_rate(year: int, e_policy: str) -> float:
+    """
+    Calculate exchange rate based on policy and year.
+    
+    Args:
+        year: Current year
+        e_policy: Exchange rate policy ('undervalue', 'market', or 'overvalue')
+        
+    Returns:
+        Exchange rate
+    """
     # Round index (0-based) from year
     round_index = max(0, (year - 1980) // 5)
-    # Baseline market exchange rate (linear interpolation 1.5 to 7.0 over 10 rounds, 0-9)
-    # Max rounds = 10 (index 0 to 9)
+    # Baseline market exchange rate (linear interpolation 1.5 to 7.0 over 10 rounds)
     num_rounds = 10
     e_market_t = E_1980 + (7.0 - E_1980) * round_index / (num_rounds - 1)
     
-    # Determine actual exchange rate based on policy
-    if e_policy == 'undervalue':
-        return e_market_t * 1.2
-    elif e_policy == 'overvalue':
-        return e_market_t * 0.8
-    else:  # market
-        return e_market_t
+    # Determine actual exchange rate based on policy using the policy multipliers
+    multiplier = POLICY_MULTIPLIERS.get(e_policy, 1.0)
+    return e_market_t * multiplier
 
-def calculate_foreign_income(year):
-    """Calculate foreign income based on year (3% annual growth)"""
+def calculate_foreign_income(year: int) -> float:
+    """
+    Calculate foreign income based on year (3% annual growth).
+    
+    Args:
+        year: Current year
+        
+    Returns:
+        Foreign income
+    """
     round_index = max(0, (year - 1980) // 5)
     return Y_STAR_1980 * (1.03**(5 * round_index))
 
-def calculate_openness_ratio(round_index):
-    """Calculate openness ratio based on round index"""
+def calculate_openness_ratio(round_index: int) -> float:
+    """
+    Calculate openness ratio based on round index.
+    
+    Args:
+        round_index: Current round index (0-based)
+        
+    Returns:
+        Openness ratio
+    """
     return 0.1 + 0.02 * round_index
 
-def calculate_fdi_ratio(year):
-    """Calculate FDI ratio based on year"""
+def calculate_fdi_ratio(year: int) -> float:
+    """
+    Calculate FDI ratio based on year.
+    
+    Args:
+        year: Current year
+        
+    Returns:
+        FDI ratio
+    """
     return 0.02 if year >= 1990 else 0
 
-# Utility functions for simulation
-def initialize_simulation(initial_conditions, T):
-    """Initialize arrays for Solow model simulation."""
-    Y, K, L, H, A, NX = [np.zeros(T) for _ in range(6)]
-    Y[0], K[0], L[0], H[0], A[0] = [initial_conditions[k] for k in ['Y', 'K', 'L', 'H', 'A']]
-    NX[0] = initial_conditions.get('NX', 0)
-    return Y, K, L, H, A, NX
-
-def get_default_parameters():
-    """Return default parameters for the Solow model"""
-    return DEFAULT_PARAMS.copy()
-
-# Main calculation functions
-def calculate_single_round(current_state, parameters, student_inputs, year):
+# =============================================================================
+# MAIN CALCULATION FUNCTIONS - Primary interfaces for simulations and game
+# =============================================================================
+def calculate_single_round(
+    current_state: Dict[str, float], 
+    parameters: Dict[str, float], 
+    student_inputs: Dict[str, Any], 
+    year: int
+) -> Dict[str, float]:
     """
     Unified function to calculate a single round of the Solow model for game state.
     This is the main entry point for single-step calculations in the game.
     
-    Parameters:
-    - current_state: dict, current values for {'Y', 'K', 'L', 'H', 'A'}.
-    - parameters: dict, model parameters including Solow and NX parameters.
-    - student_inputs: dict, student choices for this round {'s', 'e_policy'}.
-    - year: int, current year for the round.
+    Args:
+        current_state: Current values for {'Y', 'K', 'L', 'H', 'A'}.
+        parameters: Model parameters including Solow and NX parameters.
+        student_inputs: Student choices for this round {'s', 'e_policy'}.
+        year: Current year for the round.
     
     Returns:
-    - dict containing next round state and current round calculations.
+        Dictionary containing next round state and current round calculations.
     """
     # Get openness and FDI ratios for current round
     round_index = max(0, (year - 1980) // 5)
@@ -207,49 +341,26 @@ def calculate_single_round(current_state, parameters, student_inputs, year):
         'I_t': I_t      # Investment in round t
     }
 
-def simulate_solow_step(t, Y, K, L, H, A, NX, parameters, exchange_rates, foreign_incomes, openness_ratio, fdi_ratio):
-    """Simulate a single step of the Solow model for multi-step simulations."""
-    # Unpack parameters
-    params = get_default_parameters()
-    params.update(parameters)  # Override defaults with provided parameters
-    
-    alpha, delta, g, theta, phi, s, n, eta = [params[k] for k in 
-        ['alpha', 'delta', 'g', 'theta', 'phi', 's', 'n', 'eta']]
-    X0, M0, epsilon_x, epsilon_m, mu_x, mu_m = [params[k] for k in
-        ['X0', 'M0', 'epsilon_x', 'epsilon_m', 'mu_x', 'mu_m']]
-    
-    # Calculate production
-    Y[t] = calculate_production(A[t], K[t], L[t], H[t], alpha)
-    
-    # Calculate net exports
-    NX[t] = calculate_net_exports(
-        Y[t], Y[0], exchange_rates[t], exchange_rates[0],
-        foreign_incomes[t], foreign_incomes[0],
-        X0, M0, epsilon_x, epsilon_m, mu_x, mu_m
-    )
-    
-    # Calculate next period variables
-    K[t+1] = calculate_capital_next(K[t], Y[t], NX[t], s, delta)
-    L[t+1] = calculate_labor_next(L[t], n)
-    H[t+1] = calculate_human_capital_next(H[t], eta)
-    A[t+1] = calculate_tfp_next(A[t], g, theta, openness_ratio, phi, fdi_ratio)
-    
-    return Y, K, L, H, A, NX
-
-def solve_solow_model(initial_year, initial_conditions, parameters, years, historical_data=None):
+def solve_solow_model(
+    initial_year: int, 
+    initial_conditions: Dict[str, float], 
+    parameters: Dict[str, float], 
+    years: np.ndarray, 
+    historical_data: Optional[Dict[str, Any]] = None
+) -> pd.DataFrame:
     """
     Solves the augmented open-economy Solow model for multiple periods.
     Used for full simulations and game initialization.
     
-    Parameters:
-    - initial_year: int, starting year for simulation.
-    - initial_conditions: dict, initial values for Y, K, L, H, A.
-    - parameters: dict, model parameters.
-    - years: numpy array, array of years to simulate.
-    - historical_data: dict, optional historical data for comparison.
+    Args:
+        initial_year: Starting year for simulation.
+        initial_conditions: Initial values for Y, K, L, H, A.
+        parameters: Model parameters.
+        years: Array of years to simulate.
+        historical_data: Optional historical data for comparison.
     
     Returns:
-    - DataFrame containing simulated values for all periods.
+        DataFrame containing simulated values for all periods.
     """
     # Merge with default parameters 
     params = get_default_parameters()
@@ -259,9 +370,7 @@ def solve_solow_model(initial_year, initial_conditions, parameters, years, histo
     T = len(years)
     
     # Initialize arrays
-    Y, K, L, H, A, NX = initialize_simulation(initial_conditions, T)
-    C = np.zeros(T)
-    I = np.zeros(T)
+    Y, K, L, H, A, NX, C, I = initialize_arrays(initial_conditions, T)
     
     # Store exchange rates and foreign income for consistent calculations
     exchange_rates = [calculate_exchange_rate(years[t], 'market') for t in range(T)]
@@ -270,19 +379,31 @@ def solve_solow_model(initial_year, initial_conditions, parameters, years, histo
     # Simulation loop
     for t in range(T-1):
         year = years[t]
-        openness_ratio = calculate_openness_ratio(t)
+        round_index = t
+        openness_ratio = calculate_openness_ratio(round_index)
         fdi_ratio = calculate_fdi_ratio(year)
         
-        # Run simulation step
-        Y, K, L, H, A, NX = simulate_solow_step(
-            t, Y, K, L, H, A, NX, params, 
-            exchange_rates, foreign_incomes, 
-            openness_ratio, fdi_ratio
+        # Calculate production for current period
+        Y[t] = calculate_production(A[t], K[t], L[t], H[t], params['alpha'])
+        
+        # Calculate net exports for current period
+        NX[t] = calculate_net_exports(
+            Y[t], Y[0], exchange_rates[t], exchange_rates[0],
+            foreign_incomes[t], foreign_incomes[0],
+            params['X0'], params['M0'], 
+            params['epsilon_x'], params['epsilon_m'],
+            params['mu_x'], params['mu_m']
         )
         
-        # Calculate consumption and investment
+        # Calculate consumption and investment for current period
         C[t] = (1 - params['s']) * Y[t]
         I[t] = params['s'] * Y[t] + NX[t]
+        
+        # Calculate next period state variables
+        K[t+1] = calculate_capital_next(K[t], Y[t], NX[t], params['s'], params['delta'])
+        L[t+1] = calculate_labor_next(L[t], params['n'])
+        H[t+1] = calculate_human_capital_next(H[t], params['eta'])
+        A[t+1] = calculate_tfp_next(A[t], params['g'], params['theta'], openness_ratio, params['phi'], fdi_ratio)
     
     # Final year calculations (t = T-1)
     t = T - 1

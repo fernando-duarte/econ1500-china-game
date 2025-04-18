@@ -21,7 +21,7 @@ def calculate_next_round(current_state, parameters, student_inputs, year):
     - dict containing the state for the next round {'Y_next', 'K_next', 'L_next', 'H_next', 'A_next'}
       and calculated values for the current round {'NX_t', 'C_t', 'I_t'}.
     """
-    # Use the unified core function to calculate the round
+    # Simply pass through to the unified core function
     return calculate_single_round(
         current_state=current_state,
         parameters=parameters,

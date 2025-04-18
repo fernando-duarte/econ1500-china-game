@@ -1,6 +1,7 @@
 import unittest
-import numpy as np # Add numpy import if needed for assertions
+import numpy as np
 from solow_model import calculate_next_round
+from solow_core import get_default_parameters, calculate_openness_ratio
 from replay import replay_session
 
 class TestSolowModel(unittest.TestCase):
@@ -11,16 +12,9 @@ class TestSolowModel(unittest.TestCase):
         # Initial GDP for Y_1980 parameter
         self.y_1980 = 1000.0
 
-        # Define parameters based on specs.md
-        self.parameters = {
-            'alpha': 0.3, 'delta': 0.1, 'g': 0.005, 'theta': 0.1453, 'phi': 0.1,
-            'n': 0.00717, 'eta': 0.02,
-            'X0': 18.1, 'M0': 14.5,
-            'epsilon_x': 1.5, 'epsilon_m': 1.2,
-            'mu_x': 1.0, 'mu_m': 1.0,
-            'Y_1980': self.y_1980,
-            # 'openness_ratio' is calculated per round below
-        }
+        # Get default parameters and override as needed for tests
+        self.parameters = get_default_parameters()
+        self.parameters['Y_1980'] = self.y_1980
 
         # Define a base initial state (start of round)
         self.initial_state = {
@@ -38,12 +32,11 @@ class TestSolowModel(unittest.TestCase):
         }
 
     def _get_params_for_round(self, round_index):
-        "Helper to calculate round-specific parameters." 
+        """Helper to calculate round-specific parameters."""
         params = self.parameters.copy()
-        params['openness_ratio'] = 0.1 + 0.02 * round_index
+        params['openness_ratio'] = calculate_openness_ratio(round_index)
         return params
 
-    # Renamed test
     def test_basic_calculation(self):
         """Test simulation of a single round with default inputs."""
         current_year = 1985 # Example: 2nd round (index 1)
@@ -68,16 +61,22 @@ class TestSolowModel(unittest.TestCase):
         self.assertIn('C_t', result)
         self.assertIn('I_t', result)
 
-        self.assertGreater(result['K_next'], self.initial_state['K'] * (1 - self.parameters['delta']), "Capital next should generally be greater than depreciated capital")
-        self.assertGreater(result['L_next'], self.initial_state['L'], "Labor should grow")
-        self.assertGreater(result['H_next'], self.initial_state['H'], "Human Capital should grow")
-        self.assertGreater(result['A_next'], self.initial_state['A'], "TFP should grow")
-        self.assertAlmostEqual(result['C_t'], (1 - self.student_inputs_market['s']) * result['Y_t'], places=5, msg="Consumption should be (1-s)*Y_t")
-        self.assertAlmostEqual(result['I_t'], self.student_inputs_market['s'] * result['Y_t'] + result['NX_t'], places=5, msg="Investment should be s*Y_t + NX_t")
+        self.assertGreater(result['K_next'], self.initial_state['K'] * (1 - self.parameters['delta']), 
+                          "Capital next should generally be greater than depreciated capital")
+        self.assertGreater(result['L_next'], self.initial_state['L'], 
+                          "Labor should grow")
+        self.assertGreater(result['H_next'], self.initial_state['H'], 
+                          "Human Capital should grow")
+        self.assertGreater(result['A_next'], self.initial_state['A'], 
+                          "TFP should grow")
+        self.assertAlmostEqual(result['C_t'], (1 - self.student_inputs_market['s']) * result['Y_t'], 
+                              places=5, msg="Consumption should be (1-s)*Y_t")
+        self.assertAlmostEqual(result['I_t'], self.student_inputs_market['s'] * result['Y_t'] + result['NX_t'], 
+                              places=5, msg="Investment should be s*Y_t + NX_t")
         # Check capital accumulation links I_t and K_next
         expected_K_next = (1 - self.parameters['delta']) * max(0, self.initial_state['K']) + result['I_t']
-        self.assertAlmostEqual(result['K_next'], expected_K_next, places=5, msg="K_next should equal (1-d)K_t + I_t")
-
+        self.assertAlmostEqual(result['K_next'], expected_K_next, 
+                              places=5, msg="K_next should equal (1-d)K_t + I_t")
 
     def test_exchange_rate_policy_impact(self):
         """Test the impact of different exchange rate policies on Net Exports."""
@@ -126,16 +125,6 @@ class TestSolowModel(unittest.TestCase):
         # Higher savings should lead to less consumption this period
         self.assertLess(result_high_s["C_t"], result_low_s["C_t"],
                     "Higher savings rate should lead to less C_t")
-
-    # Removed WTO event test as event logic is outside the tested function
-    # def test_wto_event_impact(self): ...
-
-    # Removed visualization test as it tested a method on the old class
-    # def test_visualization_data(self): ...
-
-    # Add: Tests for group naming, event triggers, prize logic, model equations, and round update logic.
-    # Remove: Any stubbing/mocking for dev/prod.
-    # Add: Comments for clarity and maintainability.
 
     def test_replay_session_reproducibility(self):
         """Test that replaying a session with the same inputs is deterministic."""

@@ -5,6 +5,14 @@ from typing import Dict, List, Optional, Any
 import pandas as pd
 import os
 
+# Import from centralized constants file
+from constants import (
+    DEFAULT_SAVINGS_RATE,
+    DEFAULT_EXCHANGE_RATE_POLICY,
+    DEFAULT_INITIAL_CONDITIONS,
+    EXCHANGE_RATE_POLICIES
+)
+
 # Fun team name components for auto-generation
 ECONOMIC_ADJECTIVES = [
     "Prosperous", "Bullish", "Innovative", "Dynamic", "Global",
@@ -15,10 +23,6 @@ ECONOMIC_NOUNS = [
     "Pandas", "Dragons", "Tigers", "Investors", "Economists",
     "Traders", "Planners", "Entrepreneurs", "Visionaries", "Markets"
 ]
-
-# Default decision values for consistency across the codebase
-DEFAULT_SAVINGS_RATE = 0.2  # 20%
-DEFAULT_EXCHANGE_RATE_POLICY = "market"
 
 # Add a basic list of inappropriate words (can be expanded)
 INAPPROPRIATE_WORDS = {"badword", "inappropriate", "offensive"}
@@ -35,9 +39,16 @@ class TeamManager:
     
     def __init__(self):
         self.teams = {}
-        # Load initial conditions from CSV
-        csv_path = os.path.join(os.path.dirname(__file__), 'initial_conditions_v1.csv')
-        self.initial_conditions = pd.read_csv(csv_path).iloc[0].to_dict()
+        # Try to load initial conditions from CSV file, or use defaults if not found
+        try:
+            csv_path = os.path.join(os.path.dirname(__file__), 'initial_conditions_v1.csv')
+            if os.path.exists(csv_path):
+                self.initial_conditions = pd.read_csv(csv_path).iloc[0].to_dict()
+            else:
+                self.initial_conditions = DEFAULT_INITIAL_CONDITIONS
+        except Exception as e:
+            # Fallback to default initial conditions if there's an error
+            self.initial_conditions = DEFAULT_INITIAL_CONDITIONS
     
     def generate_team_name(self) -> str:
         """Generate a fun, economics-themed team name."""
@@ -73,7 +84,7 @@ class TeamManager:
         
         team_id = str(uuid.uuid4())
         
-        # Initial team state from CSV
+        # Initial team state
         initial_state = self.initial_conditions.copy()
         initial_state["year"] = current_year
         initial_state["round"] = current_round
@@ -111,8 +122,8 @@ class TeamManager:
         if not (0.01 <= savings_rate <= 0.99):
             raise ValueError("Savings rate must be between 1% and 99%")
         
-        if exchange_rate_policy not in ["undervalue", "market", "overvalue"]:
-            raise ValueError("Exchange rate policy must be 'undervalue', 'market', or 'overvalue'")
+        if exchange_rate_policy not in EXCHANGE_RATE_POLICIES:
+            raise ValueError(f"Exchange rate policy must be one of: {', '.join(EXCHANGE_RATE_POLICIES)}")
         
         # Record the decision
         decision = {
