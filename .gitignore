@@ -1,4 +1,4 @@
-.DS_Store 
+.DS_Store
 Python Solow Model/
 
 # Node.js dependencies
@@ -21,7 +21,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python 
+.Python
 
 # IDE files
 .idea/
@@ -39,7 +39,7 @@ material-dashboard-react-main/
 
 # Temporary docker build artifacts that shouldn't be tracked
 .docker/
-docker-compose.override.yml 
+docker-compose.override.yml
 
 # Logs
 logs
@@ -122,4 +122,7 @@ yarn-error.log*
 /run_all_tests.sh
 
 ## Misplaced test files
-/test/ 
+/test/
+
+## Duplicate package structure
+china-growth-game/economic-model/china_growth_game/
