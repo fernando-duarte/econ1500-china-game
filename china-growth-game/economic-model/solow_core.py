@@ -317,6 +317,10 @@ def _calculate_step(
     if exchange_rate_policy not in valid_policies:
         raise ValueError(f"Exchange rate policy must be one of {valid_policies}, got {exchange_rate_policy}")
 
+    # Convert numpy.int64 to Python int
+    if hasattr(year, 'item'):
+        year = year.item()
+
     if not isinstance(year, int):
         raise ValueError(f"Year must be an integer, got {type(year)}")
 
