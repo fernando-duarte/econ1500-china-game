@@ -15,8 +15,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy requirements file and install dependencies
 COPY requirements.txt .
+COPY requirements.lock .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.lock
 
 # Copy application code
 COPY . .

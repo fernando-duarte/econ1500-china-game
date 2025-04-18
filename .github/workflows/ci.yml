@@ -83,7 +83,7 @@ jobs:
         run: |
           cd china-growth-game/economic-model
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock
           pip install flake8 black pytest
       - name: Lint Python
         run: cd china-growth-game/economic-model && flake8 .
