@@ -244,14 +244,14 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 5 days
 
 **Subtasks:**
-1. [ ] Scan codebase for TODO comments and create inventory
-2. [ ] Prioritize TODOs based on importance and impact
-3. [ ] Address high-priority TODOs in backend code
-4. [ ] Address high-priority TODOs in frontend code
-5. [ ] Address high-priority TODOs in economic model
-6. [ ] Create tests for implemented features
-7. [ ] Update documentation for implemented features
-8. [ ] Verify all high-priority TODOs are resolved
+1. [x] Scan codebase for TODO comments and create inventory
+2. [x] Prioritize TODOs based on importance and impact
+3. [x] Address high-priority TODOs in backend code
+4. [x] Address high-priority TODOs in frontend code
+5. [x] Address high-priority TODOs in economic model
+6. [x] Create tests for implemented features
+7. [x] Update documentation for implemented features
+8. [x] Verify all high-priority TODOs are resolved
 
 **Acceptance Criteria:**
 - All high-priority TODO comments are addressed
@@ -405,7 +405,7 @@ This implementation plan breaks down the tasks identified in our review into spe
 | EV-05     | Technology Breakthrough Event Tests | Medium | Done | | Sprint 4 |
 | DOC-01    | Complete Prize Documentation in UI | High | Done | | Sprint 1 |
 | DOC-02    | Standardize Error Handling | Medium | Done | | Sprint 3 |
-| DOC-03    | Resolve TODO Comments | Medium | Not Started | | Sprint 4 |
+| DOC-03    | Resolve TODO Comments | Medium | Done | | Sprint 4 |
 | EMV-01    | Model Validation Tests | High | Done | | Sprint 1-2 |
 | EMV-02    | Deterministic Replay Functionality | High | Not Started | | Sprint 2-3 |
 | E2E-01    | End-to-End Game Flow Tests | Medium | Not Started | | Sprint 3-4 |
