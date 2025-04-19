@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from china_growth_game.economic_model.core.solow_core import (
+from economic_model_py.economic_model.core.solow_core import (
     calculate_production,
     calculate_capital_next,
     calculate_labor_next,

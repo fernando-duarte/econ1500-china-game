@@ -1,5 +1,5 @@
 import unittest
-from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
+from economic_model_py.economic_model.visualization.visualization_manager import VisualizationManager
 
 class TestVisualizationManager(unittest.TestCase):
     """Test cases for the VisualizationManager class."""

@@ -5,7 +5,7 @@ Setup script for the China Growth Game package.
 from setuptools import setup, find_packages
 
 setup(
-    name="china_growth_game",
+    name="economic_model_py",
     version="1.0.0",
     packages=find_packages(),
     install_requires=[

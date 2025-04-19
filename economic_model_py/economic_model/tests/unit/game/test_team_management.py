@@ -4,7 +4,7 @@ import uuid
 import logging
 import os
 import pandas as pd
-from china_growth_game.economic_model.game.team_management import (
+from economic_model_py.economic_model.game.team_management import (
     TeamManager,
     is_name_appropriate,
     ECONOMIC_ADJECTIVES,
@@ -14,7 +14,7 @@ from china_growth_game.economic_model.game.team_management import (
     DEFAULT_EXCHANGE_RATE_POLICY,
     EXCHANGE_RATE_POLICIES
 )
-from china_growth_game.economic_model.utils.constants import (
+from economic_model_py.economic_model.utils.constants import (
     DEFAULT_PARAMS,
     E_1980,
     Y_STAR_1980,

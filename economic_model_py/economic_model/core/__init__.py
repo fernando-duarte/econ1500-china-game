@@ -5,7 +5,7 @@ This module contains the core economic functions and models
 that power the simulation.
 """
 
-from china_growth_game.economic_model.core.solow_core import (
+from economic_model_py.economic_model.core.solow_core import (
     calculate_production,
     calculate_capital_next,
     calculate_labor_next,
@@ -20,10 +20,10 @@ from china_growth_game.economic_model.core.solow_core import (
     solve_solow_model
 )
 
-from china_growth_game.economic_model.core.solow_model import (
+from economic_model_py.economic_model.core.solow_model import (
     calculate_next_round
 )
 
-from china_growth_game.economic_model.core.solow_simulation import (
+from economic_model_py.economic_model.core.solow_simulation import (
     run_simulation
 )

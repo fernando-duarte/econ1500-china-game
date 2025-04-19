@@ -1,5 +1,5 @@
 import unittest
-from china_growth_game.economic_model.game.events_manager import EventsManager
+from economic_model_py.economic_model.game.events_manager import EventsManager
 
 class TestEventsManager(unittest.TestCase):
     """Test cases for the EventsManager class."""

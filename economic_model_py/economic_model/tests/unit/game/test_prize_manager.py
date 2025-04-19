@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import logging
 from datetime import datetime
-from china_growth_game.economic_model.game.prize_manager import PrizeManager, PRIZE_TYPES
+from economic_model_py.economic_model.game.prize_manager import PrizeManager, PRIZE_TYPES
 
 class TestPrizeManager(unittest.TestCase):
     """Test cases for the PrizeManager class."""

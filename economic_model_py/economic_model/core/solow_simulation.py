@@ -8,7 +8,7 @@ of the Solow model over multiple periods.
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional
-from china_growth_game.economic_model.core.solow_core import solve_solow_model
+from economic_model_py.economic_model.core.solow_core import solve_solow_model
 
 def run_simulation(
     initial_year: int,

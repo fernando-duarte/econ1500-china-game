@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import GameDashboard from './layouts/game';
 
 // Create a theme
 const theme = createTheme({
@@ -24,17 +25,9 @@ function App() {
       <CssBaseline />
       <Router>
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <Container component="main" sx={{ mt: 8, mb: 2 }} maxWidth="md">
-            <Typography variant="h2" component="h1" gutterBottom>
-              China's Growth Game
-            </Typography>
-            <Typography variant="h5" component="h2" gutterBottom>
-              An economic simulation game for understanding China's growth model
-            </Typography>
-            <Typography variant="body1">
-              This application is currently in development. Please check back later.
-            </Typography>
-          </Container>
+          <Routes>
+            <Route path="/" element={<GameDashboard />} />
+          </Routes>
           <Box
             component="footer"
             sx={{

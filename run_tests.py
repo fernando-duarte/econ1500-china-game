@@ -2,7 +2,7 @@
 """
 Test runner for the China Growth Game package.
 
-This script discovers and runs all tests in the china_growth_game package.
+This script discovers and runs all tests in the economic_model_py package.
 It supports verbose output and coverage reporting.
 """
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     verbosity = 2 if args.verbose else 1
 
     # Discover and run all tests
-    test_suite = unittest.defaultTestLoader.discover('china_growth_game/economic_model/tests')
+    test_suite = unittest.defaultTestLoader.discover('economic_model_py/economic_model/tests')
     test_runner = unittest.TextTestRunner(verbosity=verbosity)
 
     # Run tests with coverage if requested

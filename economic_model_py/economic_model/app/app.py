@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
 import uvicorn
-from china_growth_game.economic_model.game.game_state import GameState
+from economic_model_py.economic_model.game.game_state import GameState
 import json
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder

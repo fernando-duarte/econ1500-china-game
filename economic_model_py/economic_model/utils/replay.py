@@ -21,7 +21,7 @@ def replay_session(initial_conditions, decisions_log, num_rounds=10, fixed_seed=
         Dictionary containing team data with their final states.
     """
     # Import here to avoid circular imports
-    from china_growth_game.economic_model.game.game_state import GameState
+    from economic_model_py.economic_model.game.game_state import GameState
 
     # Set up game state and teams
     game = GameState()

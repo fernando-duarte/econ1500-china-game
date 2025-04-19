@@ -5,7 +5,7 @@ This module contains utility functions, constants, and helper
 classes used throughout the economic model.
 """
 
-from china_growth_game.economic_model.utils.constants import (
+from economic_model_py.economic_model.utils.constants import (
     DEFAULT_SAVINGS_RATE,
     DEFAULT_EXCHANGE_RATE_POLICY,
     DEFAULT_INITIAL_CONDITIONS,
@@ -18,4 +18,4 @@ from china_growth_game.economic_model.utils.constants import (
     COVID_EVENT_YEAR
 )
 
-from china_growth_game.economic_model.utils.replay import replay_session
+from economic_model_py.economic_model.utils.replay import replay_session

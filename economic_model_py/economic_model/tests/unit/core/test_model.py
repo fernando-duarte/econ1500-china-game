@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
-from china_growth_game.economic_model.core.solow_model import calculate_next_round
-from china_growth_game.economic_model.core.solow_core import get_default_parameters, calculate_openness_ratio
-from china_growth_game.economic_model.utils.replay import replay_session
+from economic_model_py.economic_model.core.solow_model import calculate_next_round
+from economic_model_py.economic_model.core.solow_core import get_default_parameters, calculate_openness_ratio
+from economic_model_py.economic_model.utils.replay import replay_session
 
 class TestSolowModel(unittest.TestCase):
     """Test cases for the calculate_next_round function."""

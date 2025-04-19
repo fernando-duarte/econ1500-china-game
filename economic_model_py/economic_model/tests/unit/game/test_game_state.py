@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import patch, MagicMock
 import uuid
 import numpy as np
-from china_growth_game.economic_model.game.game_state import GameState
-from china_growth_game.economic_model.core.solow_model import calculate_next_round
-from china_growth_game.economic_model.game.team_management import TeamManager
-from china_growth_game.economic_model.game.events_manager import EventsManager
-from china_growth_game.economic_model.game.rankings_manager import RankingsManager
-from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
+from economic_model_py.economic_model.game.game_state import GameState
+from economic_model_py.economic_model.core.solow_model import calculate_next_round
+from economic_model_py.economic_model.game.team_management import TeamManager
+from economic_model_py.economic_model.game.events_manager import EventsManager
+from economic_model_py.economic_model.game.rankings_manager import RankingsManager
+from economic_model_py.economic_model.visualization.visualization_manager import VisualizationManager
 
 class TestGameState(unittest.TestCase):
     """Test cases for the GameState class."""
@@ -130,7 +130,7 @@ class TestGameState(unittest.TestCase):
         self.assertEqual(unmodified_results, round_results)
         self.assertEqual(applied_events, [])
         
-    @patch('china_growth_game.economic_model.core.solow_model.calculate_next_round')
+    @patch('economic_model_py.economic_model.core.solow_model.calculate_next_round')
     def test_process_team_round(self, mock_calculate_next_round):
         """Test processing a team's round."""
         # Mock the calculate_next_round function

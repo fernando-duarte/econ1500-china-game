@@ -1,5 +1,5 @@
 import unittest
-from china_growth_game.economic_model.utils.constants import (
+from economic_model_py.economic_model.utils.constants import (
     DEFAULT_PARAMS,
     DEFAULT_INITIAL_CONDITIONS,
     DEFAULT_YEARS,

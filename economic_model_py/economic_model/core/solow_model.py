@@ -26,7 +26,7 @@ def calculate_next_round(
         Dictionary containing next round state and current round calculations.
     """
     # Import here to avoid circular imports
-    from china_growth_game.economic_model.core.solow_core import calculate_single_round
+    from economic_model_py.economic_model.core.solow_core import calculate_single_round
 
     return calculate_single_round(
         current_state=current_state,

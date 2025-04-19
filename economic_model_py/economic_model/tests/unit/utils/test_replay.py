@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import copy
 import uuid
-from china_growth_game.economic_model.utils.replay import replay_session
+from economic_model_py.economic_model.utils.replay import replay_session
 
 class TestReplay(unittest.TestCase):
     """Test cases for the replay module."""
@@ -167,7 +167,7 @@ class TestReplay(unittest.TestCase):
         self.assertEqual(result1, result2)
     
     @unittest.skip("Skipping due to implementation details - calculate_next_round is called indirectly")
-    @patch('china_growth_game.economic_model.core.solow_model.calculate_next_round')
+    @patch('economic_model_py.economic_model.core.solow_model.calculate_next_round')
     def test_replay_session_calls_calculate_next_round(self, mock_calculate_next_round):
         """Test that replay_session calls calculate_next_round with the correct arguments."""
         # Mock the calculate_next_round function

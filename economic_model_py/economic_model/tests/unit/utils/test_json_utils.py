@@ -7,7 +7,7 @@ This module tests the JSON serialization utilities for handling numpy types.
 import unittest
 import numpy as np
 import json
-from china_growth_game.economic_model.utils.json_utils import (
+from economic_model_py.economic_model.utils.json_utils import (
     convert_numpy_values,
     numpy_safe_json_dumps,
     numpy_safe_json_loads,

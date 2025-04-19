@@ -13,7 +13,7 @@ import pandas as pd
 import os
 
 # Import from centralized constants file
-from china_growth_game.economic_model.utils.constants import (
+from economic_model_py.economic_model.utils.constants import (
     DEFAULT_SAVINGS_RATE,
     DEFAULT_EXCHANGE_RATE_POLICY,
     DEFAULT_INITIAL_CONDITIONS,

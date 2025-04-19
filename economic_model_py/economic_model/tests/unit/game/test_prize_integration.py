@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 import uuid
 import numpy as np
-from china_growth_game.economic_model.game.game_state import GameState
-from china_growth_game.economic_model.game.prize_manager import PrizeManager, PRIZE_TYPES
+from economic_model_py.economic_model.game.game_state import GameState
+from economic_model_py.economic_model.game.prize_manager import PrizeManager, PRIZE_TYPES
 
 class TestPrizeIntegration(unittest.TestCase):
     """Test cases for the integration of PrizeManager with GameState."""
