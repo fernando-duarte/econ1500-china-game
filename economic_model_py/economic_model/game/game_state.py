@@ -8,6 +8,7 @@ from china_growth_game.economic_model.core.solow_model import calculate_next_rou
 from china_growth_game.economic_model.game.team_management import TeamManager, DEFAULT_SAVINGS_RATE, DEFAULT_EXCHANGE_RATE_POLICY
 from china_growth_game.economic_model.game.events_manager import EventsManager
 from china_growth_game.economic_model.game.rankings_manager import RankingsManager
+from china_growth_game.economic_model.game.prize_manager import PrizeManager
 from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
 from china_growth_game.economic_model.core.solow_core import (
     get_default_parameters,
@@ -40,6 +41,7 @@ class GameState:
         self.team_manager = TeamManager()
         self.events_manager = EventsManager()
         self.rankings_manager = RankingsManager()
+        self.prize_manager = PrizeManager()
         self.visualization_manager = VisualizationManager()
 
         # Get default model parameters from the centralized utility function
@@ -192,6 +194,9 @@ class GameState:
         # We don't need the applied_event_names here, but we keep the function signature for consistency
         round_results, _ = self._apply_event_effects(round_results, current_events, team_id)
 
+        # Apply prize effects
+        round_results = self.prize_manager.apply_prize_effects(team_id, round_results)
+
         # Prepare the full state dictionary for the next round
         next_state_data = {
             'Year': self.current_year + 5, # State is for the *start* of the next year block
@@ -251,6 +256,16 @@ class GameState:
                     raise
             # Calculate rankings after processing all teams
             self.calculate_rankings()
+
+            # Check for prize eligibility and award prizes
+            eligible_prizes = self.prize_manager.check_prize_eligibility(
+                self.team_manager.teams,
+                self.current_round,
+                self.current_year,
+                self.rankings_manager.rankings
+            )
+            awarded_prizes = self.prize_manager.award_prizes(eligible_prizes)
+
             # Mark this round as processed
             self.processed_rounds.add(self.current_round)
 
@@ -282,6 +297,7 @@ class GameState:
             "current_year": self.current_year,
             "teams": self.team_manager.get_team_data_for_game_state(),
             "rankings": self.rankings_manager.rankings,
+            "prizes": self.prize_manager.get_all_prizes(),
             "game_started": self.game_started,
             "game_ended": self.game_ended
         }
@@ -291,6 +307,8 @@ class GameState:
     def get_team_state(self, team_id: str) -> Dict[str, Any]:
         """Get the state of a specific team."""
         team_state = self.team_manager.get_team_state(team_id)
+        # Add prizes to team state
+        team_state["prizes"] = self.prize_manager.get_team_prizes(team_id)
         return convert_numpy_values(team_state)
 
     def get_team_visualizations(self, team_id: str) -> Dict[str, Any]:
@@ -298,3 +316,19 @@ class GameState:
         team = self.team_manager.get_team_state(team_id)
         visualizations = self.visualization_manager.get_team_visualizations(team)
         return convert_numpy_values(visualizations)
+
+    def reset_game(self) -> Dict[str, Any]:
+        """Reset the game state to initial values."""
+        self.current_round = 0
+        self.current_year = 1980
+        self.game_started = False
+        self.game_ended = False
+        self.processed_rounds = set()
+
+        # Reset component managers
+        self.team_manager = TeamManager()
+        self.events_manager.reset_events()
+        self.rankings_manager = RankingsManager()
+        self.prize_manager.reset_prizes()
+
+        return self.get_game_state()

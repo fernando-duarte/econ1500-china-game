@@ -12,14 +12,14 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 3 days
 
 **Subtasks:**
-1. [ ] Create test fixture with mock game state and teams
-2. [ ] Implement test for GDP growth achievement prize idempotency
-3. [ ] Implement test for tech leadership prize idempotency
-4. [ ] Implement test for sustainable growth prize idempotency
-5. [ ] Implement test for crisis management award idempotency
-6. [ ] Implement test for export champion award idempotency
-7. [ ] Verify all tests pass with current implementation
-8. [ ] Fix any issues found during testing
+1. [x] Create test fixture with mock game state and teams
+2. [x] Implement test for GDP growth achievement prize idempotency
+3. [x] Implement test for tech leadership prize idempotency
+4. [x] Implement test for sustainable growth prize idempotency
+5. [x] Implement test for crisis management award idempotency
+6. [x] Implement test for export champion award idempotency
+7. [x] Verify all tests pass with current implementation
+8. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Unit tests verify that attempting to award the same prize twice to a team fails
@@ -70,13 +70,13 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 3 days
 
 **Subtasks:**
-1. [ ] Create test fixture with multiple teams
-2. [ ] Implement race condition simulation for prize qualification
-3. [ ] Implement test for simultaneous GDP growth achievement
-4. [ ] Implement test for simultaneous tech leadership qualification
-5. [ ] Implement test for simultaneous sustainable growth qualification
-6. [ ] Verify all tests pass with current implementation
-7. [ ] Fix any issues found during testing
+1. [x] Create test fixture with multiple teams
+2. [x] Implement race condition simulation for prize qualification
+3. [x] Implement test for simultaneous GDP growth achievement
+4. [x] Implement test for simultaneous tech leadership qualification
+5. [x] Implement test for simultaneous sustainable growth qualification
+6. [x] Verify all tests pass with current implementation
+7. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests simulate multiple teams qualifying for prizes simultaneously
@@ -89,12 +89,12 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create test fixture with game state at different points in a round
-2. [ ] Implement test for prize calculation timing during round progression
-3. [ ] Implement test for prize calculation at round boundary
-4. [ ] Implement test for prize calculation with interrupted round
-5. [ ] Verify all tests pass with current implementation
-6. [ ] Fix any issues found during testing
+1. [x] Create test fixture with game state at different points in a round
+2. [x] Implement test for prize calculation timing during round progression
+3. [x] Implement test for prize calculation at round boundary
+4. [x] Implement test for prize calculation with interrupted round
+5. [x] Verify all tests pass with current implementation
+6. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that prize calculations only occur at the end of rounds
@@ -393,11 +393,11 @@ This implementation plan breaks down the tasks identified in our review into spe
 ### Ticket Status Board
 | Ticket ID | Description | Priority | Status | Assigned To | Due Date |
 |-----------|-------------|----------|--------|-------------|----------|
-| PZ-01     | Prize Idempotency Tests | High | Not Started | | Sprint 1 |
+| PZ-01     | Prize Idempotency Tests | High | Done | | Sprint 1 |
 | PZ-02     | Prize Persistence Tests | High | Not Started | | Sprint 1 |
 | PZ-03     | Prize Notification Tests | High | Not Started | | Sprint 1 |
-| PZ-04     | Prize Concurrency Tests | High | Not Started | | Sprint 2 |
-| PZ-05     | Prize Calculation Timing Tests | Medium | Not Started | | Sprint 2 |
+| PZ-04     | Prize Concurrency Tests | High | Done | | Sprint 2 |
+| PZ-05     | Prize Calculation Timing Tests | Medium | Done | | Sprint 2 |
 | EV-01     | Event Randomization Tests | High | Not Started | | Sprint 2 |
 | EV-02     | WTO Accession Event Tests | Medium | Not Started | | Sprint 3 |
 | EV-03     | Financial Crisis Event Tests | Medium | Not Started | | Sprint 3 |
