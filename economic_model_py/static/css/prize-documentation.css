@@ -1,0 +1,359 @@
+/**
+ * Prize documentation styles for the China Growth Game.
+ */
+
+/* Prize Tooltips */
+.prize-tooltip {
+    max-width: 400px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.prize-tooltip h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.prize-tooltip h4 {
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.prize-effects ul, .prize-tips ul {
+    padding-left: 20px;
+    margin-bottom: 10px;
+}
+
+.prize-effects li, .prize-tips li {
+    margin-bottom: 5px;
+}
+
+.effect-description {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.historical-context {
+    font-style: italic;
+    border-top: 1px dotted #ddd;
+    margin-top: 10px;
+    padding-top: 10px;
+    font-size: 13px;
+}
+
+/* Prize Notifications */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+}
+
+.notification {
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    margin-bottom: 15px;
+    padding: 15px;
+    position: relative;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateX(50px);
+    animation: notification-appear 0.3s forwards;
+}
+
+@keyframes notification-appear {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notification-success {
+    border-left: 5px solid #2ecc71;
+}
+
+.notification-info {
+    border-left: 5px solid #3498db;
+}
+
+.notification-warning {
+    border-left: 5px solid #f39c12;
+}
+
+.notification-error {
+    border-left: 5px solid #e74c3c;
+}
+
+.notification-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
+}
+
+.notification-close:hover {
+    color: #333;
+}
+
+.prize-notification h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+/* Prize Help Modal */
+.prizes-help-modal {
+    color: #333;
+}
+
+.prizes-help-modal h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.prizes-help-modal .lead {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 18px;
+    color: #555;
+}
+
+.prize-category {
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 5px solid #3498db;
+}
+
+.prize-category h3 {
+    margin-top: 0;
+    color: #2c3e50;
+    font-size: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.prize-category p {
+    margin-bottom: 10px;
+}
+
+.prizes-help-footer {
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.prizes-help-footer h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.prizes-help-footer ul {
+    padding-left: 20px;
+    margin-bottom: 0;
+}
+
+.prizes-help-footer li {
+    margin-bottom: 5px;
+}
+
+/* Prize Icons */
+.prize-icon {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.prize-icon-gdp_growth {
+    background: url('../img/prize-gdp-growth.png') no-repeat center center;
+    background-size: contain;
+}
+
+.prize-icon-tech_leadership {
+    background: url('../img/prize-tech-leadership.png') no-repeat center center;
+    background-size: contain;
+}
+
+.prize-icon-sustainable_growth {
+    background: url('../img/prize-sustainable-growth.png') no-repeat center center;
+    background-size: contain;
+}
+
+.prize-icon-crisis_management {
+    background: url('../img/prize-crisis-management.png') no-repeat center center;
+    background-size: contain;
+}
+
+.prize-icon-export_champion {
+    background: url('../img/prize-export-champion.png') no-repeat center center;
+    background-size: contain;
+}
+
+/* Prize List */
+.prize-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.prize-list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s ease;
+}
+
+.prize-list-item:hover {
+    background-color: #f9f9f9;
+}
+
+.prize-list-item:last-child {
+    border-bottom: none;
+}
+
+.prize-list-item-content {
+    flex: 1;
+}
+
+.prize-list-item-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.prize-list-item-description {
+    font-size: 14px;
+    color: #666;
+}
+
+.prize-list-item-date {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+}
+
+/* Prize Dashboard */
+.prize-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.prize-card {
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prize-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.prize-card-header {
+    background-color: #3498db;
+    color: #fff;
+    padding: 15px;
+    position: relative;
+}
+
+.prize-card-title {
+    margin: 0;
+    font-size: 18px;
+}
+
+.prize-card-body {
+    padding: 15px;
+}
+
+.prize-card-description {
+    margin-bottom: 15px;
+    color: #666;
+}
+
+.prize-card-criteria {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.prize-card-effects {
+    margin-bottom: 15px;
+}
+
+.prize-card-effects-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.prize-card-effects-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.prize-card-effects-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.prize-card-effects-item:before {
+    content: "•";
+    margin-right: 5px;
+    color: #3498db;
+}
+
+.prize-card-footer {
+    background-color: #f9f9f9;
+    padding: 10px 15px;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+    color: #666;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .prize-dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .prize-tooltip {
+        max-width: 300px;
+    }
+    
+    .notification-container {
+        max-width: 300px;
+    }
+}

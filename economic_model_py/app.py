@@ -347,6 +347,15 @@ def load_game(game_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Documentation endpoints
+@app.get("/documentation/prizes")
+def get_prize_documentation():
+    """Get prize system documentation."""
+    from fastapi.responses import HTMLResponse
+    with open("economic_model_py/templates/prize_documentation.html", "r") as f:
+        content = f.read()
+    return HTMLResponse(content=content)
+
 # Results and visualization endpoints
 @app.get("/results/rankings")
 def get_rankings():

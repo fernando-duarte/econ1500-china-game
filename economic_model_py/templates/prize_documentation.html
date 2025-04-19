@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prize System Documentation - China Growth Game</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/prize-documentation.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">China Growth Game</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Game</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/prizes">Prizes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/help">Help</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="jumbotron">
+            <h1 class="display-4">China Growth Game: Prize System</h1>
+            <p class="lead">The prize system rewards teams for achieving specific economic milestones and implementing successful policies.</p>
+            <hr class="my-4">
+            <p>Prizes provide both immediate benefits and long-term advantages. Some prizes make your economy more resilient to negative events, while others boost your growth potential.</p>
+        </div>
+
+        <div class="prize-dashboard">
+            <!-- GDP Growth Achievement Prize -->
+            <div class="prize-card" data-prize-type="gdp_growth">
+                <div class="prize-card-header">
+                    <h3 class="prize-card-title">GDP Growth Achievement</h3>
+                </div>
+                <div class="prize-card-body">
+                    <p class="prize-card-description">Awarded to teams that achieve exceptional GDP growth over a sustained period.</p>
+                    <div class="prize-card-criteria">
+                        <strong>Criteria:</strong> Maintain GDP growth rate above 8% for at least 3 consecutive rounds.
+                    </div>
+                    <div class="prize-card-effects">
+                        <div class="prize-card-effects-title">Effects:</div>
+                        <ul class="prize-card-effects-list">
+                            <li class="prize-card-effects-item">TFP increase: +5%</li>
+                            <li class="prize-card-effects-item">Exports multiplier: 1.1x</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="prize-card-footer">
+                    <strong>Historical Context:</strong> China maintained double-digit GDP growth rates through much of the 1990s and 2000s.
+                </div>
+            </div>
+
+            <!-- Technology Leadership Prize -->
+            <div class="prize-card" data-prize-type="tech_leadership">
+                <div class="prize-card-header">
+                    <h3 class="prize-card-title">Technology Leadership</h3>
+                </div>
+                <div class="prize-card-body">
+                    <p class="prize-card-description">Awarded to teams that achieve technological breakthroughs through R&D investment.</p>
+                    <div class="prize-card-criteria">
+                        <strong>Criteria:</strong> Invest at least 2.5% of GDP in R&D for 3 consecutive rounds.
+                    </div>
+                    <div class="prize-card-effects">
+                        <div class="prize-card-effects-title">Effects:</div>
+                        <ul class="prize-card-effects-list">
+                            <li class="prize-card-effects-item">TFP increase: +8%</li>
+                            <li class="prize-card-effects-item">Tech breakthrough probability: +20%</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="prize-card-footer">
+                    <strong>Historical Context:</strong> China's transition from 'Made in China' to 'Created in China' has been supported by massive increases in R&D spending.
+                </div>
+            </div>
+
+            <!-- Sustainable Growth Prize -->
+            <div class="prize-card" data-prize-type="sustainable_growth">
+                <div class="prize-card-header">
+                    <h3 class="prize-card-title">Sustainable Growth</h3>
+                </div>
+                <div class="prize-card-body">
+                    <p class="prize-card-description">Awarded to teams that maintain balanced and sustainable economic growth.</p>
+                    <div class="prize-card-criteria">
+                        <strong>Criteria:</strong> Maintain positive GDP growth for 5 consecutive rounds with low volatility (standard deviation < 2%).
+                    </div>
+                    <div class="prize-card-effects">
+                        <div class="prize-card-effects-title">Effects:</div>
+                        <ul class="prize-card-effects-list">
+                            <li class="prize-card-effects-item">GDP growth stability: +30%</li>
+                            <li class="prize-card-effects-item">Foreign investment multiplier: 1.15x</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="prize-card-footer">
+                    <strong>Historical Context:</strong> China's economic planners have emphasized stable growth ('稳定增长') as a key policy objective.
+                </div>
+            </div>
+
+            <!-- Crisis Management Prize -->
+            <div class="prize-card" data-prize-type="crisis_management">
+                <div class="prize-card-header">
+                    <h3 class="prize-card-title">Crisis Management</h3>
+                </div>
+                <div class="prize-card-body">
+                    <p class="prize-card-description">Awarded to teams that effectively navigate economic crises.</p>
+                    <div class="prize-card-criteria">
+                        <strong>Criteria:</strong> Recover to pre-crisis GDP levels within 2 rounds after a major economic shock.
+                    </div>
+                    <div class="prize-card-effects">
+                        <div class="prize-card-effects-title">Effects:</div>
+                        <ul class="prize-card-effects-list">
+                            <li class="prize-card-effects-item">Recession recovery boost: +25%</li>
+                            <li class="prize-card-effects-item">Capital protection: +20%</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="prize-card-footer">
+                    <strong>Historical Context:</strong> China's response to the 2008 global financial crisis included a massive stimulus package.
+                </div>
+            </div>
+
+            <!-- Export Champion Prize -->
+            <div class="prize-card" data-prize-type="export_champion">
+                <div class="prize-card-header">
+                    <h3 class="prize-card-title">Export Champion</h3>
+                </div>
+                <div class="prize-card-body">
+                    <p class="prize-card-description">Awarded to teams that achieve exceptional export growth.</p>
+                    <div class="prize-card-criteria">
+                        <strong>Criteria:</strong> Maintain export growth above 10% for 3 consecutive rounds and achieve exports > 30% of GDP.
+                    </div>
+                    <div class="prize-card-effects">
+                        <div class="prize-card-effects-title">Effects:</div>
+                        <ul class="prize-card-effects-list">
+                            <li class="prize-card-effects-item">Foreign income multiplier: 1.2x</li>
+                            <li class="prize-card-effects-item">Exchange rate advantage: +15%</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="prize-card-footer">
+                    <strong>Historical Context:</strong> China's export-led growth strategy transformed it into the world's largest exporter.
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4 mb-4">
+            <div class="card-header">
+                <h3>General Prize Information</h3>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Prizes are evaluated at the end of each round.</li>
+                    <li>Multiple prizes can be awarded to the same team.</li>
+                    <li>Prize effects are permanent and cumulative.</li>
+                    <li>Prizes provide both immediate benefits and long-term advantages.</li>
+                    <li>Some prizes make your economy more resilient to negative events.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mt-4 mb-4">
+            <div class="card-header">
+                <h3>Strategy Tips</h3>
+            </div>
+            <div class="card-body">
+                <p>Different prizes require different strategies. Here are some general tips:</p>
+                <ul>
+                    <li><strong>Diversify your approach:</strong> Don't focus exclusively on one prize. A balanced strategy can help you achieve multiple prizes.</li>
+                    <li><strong>Plan ahead:</strong> Some prizes require consistent performance over multiple rounds. Plan your policies accordingly.</li>
+                    <li><strong>Adapt to events:</strong> Major events like the WTO accession or financial crisis can provide opportunities to demonstrate crisis management skills.</li>
+                    <li><strong>Monitor your progress:</strong> Keep track of your performance relative to prize criteria to know how close you are to earning each prize.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white mt-5 py-3">
+        <div class="container text-center">
+            <p>&copy; 2023 China Growth Game. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script type="module">
+        import { initializePrizeDocumentation } from "{{ url_for('static', filename='js/prize-documentation.js') }}";
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePrizeDocumentation();
+        });
+    </script>
+</body>
+</html>
