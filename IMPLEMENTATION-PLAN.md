@@ -165,12 +165,12 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create test fixture with teams in different regions
-2. [ ] Implement test for regional impact calculation
-3. [ ] Implement test for natural disaster triggering conditions
-4. [ ] Implement test for natural disaster effects on different regions
-5. [ ] Verify all tests pass with current implementation
-6. [ ] Fix any issues found during testing
+1. [x] Create test fixture with teams in different regions
+2. [x] Implement test for regional impact calculation
+3. [x] Implement test for natural disaster triggering conditions
+4. [x] Implement test for natural disaster effects on different regions
+5. [x] Verify all tests pass with current implementation
+6. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that natural disaster events have different impacts based on region
@@ -183,12 +183,12 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create test fixture with teams having different R&D levels
-2. [ ] Implement test for technology breakthrough probability calculation
-3. [ ] Implement test for technology breakthrough triggering conditions
-4. [ ] Implement test for technology breakthrough effects on economy
-5. [ ] Verify all tests pass with current implementation
-6. [ ] Fix any issues found during testing
+1. [x] Create test fixture with teams having different R&D levels
+2. [x] Implement test for technology breakthrough probability calculation
+3. [x] Implement test for technology breakthrough triggering conditions
+4. [x] Implement test for technology breakthrough effects on economy
+5. [x] Verify all tests pass with current implementation
+6. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that teams with higher R&D have higher probability of technology breakthroughs
@@ -401,8 +401,8 @@ This implementation plan breaks down the tasks identified in our review into spe
 | EV-01     | Event Randomization Tests | High | Done | | Sprint 2 |
 | EV-02     | WTO Accession Event Tests | Medium | Done | | Sprint 3 |
 | EV-03     | Financial Crisis Event Tests | Medium | Done | | Sprint 3 |
-| EV-04     | Natural Disaster Event Tests | Medium | Not Started | | Sprint 4 |
-| EV-05     | Technology Breakthrough Event Tests | Medium | Not Started | | Sprint 4 |
+| EV-04     | Natural Disaster Event Tests | Medium | Done | | Sprint 4 |
+| EV-05     | Technology Breakthrough Event Tests | Medium | Done | | Sprint 4 |
 | DOC-01    | Complete Prize Documentation in UI | High | Not Started | | Sprint 1 |
 | DOC-02    | Standardize Error Handling | Medium | Not Started | | Sprint 3 |
 | DOC-03    | Resolve TODO Comments | Medium | Not Started | | Sprint 4 |
