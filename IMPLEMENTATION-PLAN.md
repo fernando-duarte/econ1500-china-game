@@ -146,13 +146,13 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create test fixture with controlled random seed
-2. [ ] Implement test for financial crisis probability calculation
-3. [ ] Implement test for financial crisis triggering conditions
-4. [ ] Implement test for financial crisis effects on economy
-5. [ ] Implement test for financial crisis notification to teams
-6. [ ] Verify all tests pass with current implementation
-7. [ ] Fix any issues found during testing
+1. [x] Create test fixture with controlled random seed
+2. [x] Implement test for financial crisis probability calculation
+3. [x] Implement test for financial crisis triggering conditions
+4. [x] Implement test for financial crisis effects on economy
+5. [x] Implement test for financial crisis notification to teams
+6. [x] Verify all tests pass with current implementation
+7. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that financial crisis events trigger with expected probabilities
@@ -400,7 +400,7 @@ This implementation plan breaks down the tasks identified in our review into spe
 | PZ-05     | Prize Calculation Timing Tests | Medium | Done | | Sprint 2 |
 | EV-01     | Event Randomization Tests | High | Done | | Sprint 2 |
 | EV-02     | WTO Accession Event Tests | Medium | Done | | Sprint 3 |
-| EV-03     | Financial Crisis Event Tests | Medium | Not Started | | Sprint 3 |
+| EV-03     | Financial Crisis Event Tests | Medium | Done | | Sprint 3 |
 | EV-04     | Natural Disaster Event Tests | Medium | Not Started | | Sprint 4 |
 | EV-05     | Technology Breakthrough Event Tests | Medium | Not Started | | Sprint 4 |
 | DOC-01    | Complete Prize Documentation in UI | High | Not Started | | Sprint 1 |
