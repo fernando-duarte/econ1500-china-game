@@ -177,10 +177,10 @@ npm test
 
 ## Deployment
 
-For production deployment, use the production Docker Compose configuration:
+For deployment, use the Docker Compose configuration:
 
 ```
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose up -d
 ```
 
 ## Contributing
