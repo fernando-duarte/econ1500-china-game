@@ -2,7 +2,7 @@
 describe('Backend idempotency', () => {
   let lastProcessed;
 
-  // Helper functions (same as in unified-server.js)
+  // Helper functions (same as in server.js)
   function isTeamDecisionProcessed(teamId, round) {
     return lastProcessed.updateTeam[teamId] === round;
   }

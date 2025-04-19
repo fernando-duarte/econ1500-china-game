@@ -126,7 +126,7 @@ This script will:
 3. Run the development environment startup script:
 
 ```bash
-./start-unified.sh
+./start.sh
 ```
 
 This script will:
