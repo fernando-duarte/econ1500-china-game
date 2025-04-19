@@ -10,6 +10,7 @@ from economic_model_py.economic_model.game.events_manager import EventsManager
 from economic_model_py.economic_model.game.randomized_events_manager import RandomizedEventsManager
 from economic_model_py.economic_model.game.rankings_manager import RankingsManager
 from economic_model_py.economic_model.game.prize_manager import PrizeManager
+from economic_model_py.economic_model.game.replay_manager import ReplayManager
 from economic_model_py.economic_model.visualization.visualization_manager import VisualizationManager
 from economic_model_py.economic_model.utils.persistence import PersistenceManager
 from economic_model_py.economic_model.utils.notification_manager import NotificationManager
@@ -30,7 +31,7 @@ class GameState:
     Uses modular components for team management, events, and rankings.
     """
 
-    def __init__(self, persistence_manager: PersistenceManager = None, notification_manager: NotificationManager = None, use_randomized_events: bool = False, random_seed: int = None):
+    def __init__(self, persistence_manager: PersistenceManager = None, notification_manager: NotificationManager = None, use_randomized_events: bool = False, random_seed: int = None, enable_replay: bool = True):
         self.game_id = str(uuid.uuid4())
         self.created_at = datetime.now().isoformat()
         self.current_round = 0
@@ -43,6 +44,7 @@ class GameState:
         self.notification_manager = notification_manager
         self.use_randomized_events = use_randomized_events
         self.random_seed = random_seed
+        self.enable_replay = enable_replay
 
         # Initialize component managers
         self.team_manager = TeamManager()
@@ -60,12 +62,23 @@ class GameState:
         )
         self.visualization_manager = VisualizationManager()
 
+        # Initialize replay manager if enabled
+        if enable_replay:
+            self.replay_manager = ReplayManager()
+        else:
+            self.replay_manager = None
+
         # Get default model parameters from the centralized utility function
         self.model_parameters = get_default_parameters()
 
     def create_team(self, team_name: Optional[str] = None) -> Dict[str, Any]:
         """Create a new team with initial state."""
         team = self.team_manager.create_team(team_name, self.current_year, self.current_round)
+
+        # Record state if replay is enabled
+        if self.replay_manager and self.replay_manager.is_recording:
+            self.replay_manager.record_state(self.get_game_state())
+
         return convert_numpy_values(team)
 
     def submit_decision(self, team_id: str, savings_rate: float, exchange_rate_policy: str) -> Dict[str, Any]:
@@ -74,6 +87,20 @@ class GameState:
             team_id, savings_rate, exchange_rate_policy,
             self.current_round, self.current_year
         )
+
+        # Record decision if replay is enabled
+        if self.replay_manager and self.replay_manager.is_recording:
+            self.replay_manager.record_decision(
+                team_id,
+                self.current_round,
+                {
+                    'savings_rate': savings_rate,
+                    'exchange_rate_policy': exchange_rate_policy,
+                    'round': self.current_round,
+                    'year': self.current_year
+                }
+            )
+
         return convert_numpy_values(decision)
 
     def start_game(self) -> Dict[str, Any]:
@@ -90,6 +117,12 @@ class GameState:
             team["history"].append(team["current_state"].copy())
 
         game_state = self.get_game_state()
+
+        # Start recording if replay is enabled
+        if self.replay_manager and self.enable_replay:
+            self.replay_manager.start_recording(self.game_id)
+            self.replay_manager.record_state(game_state)
+
         return game_state
 
     def _get_parameters_for_round(self, round_index: int) -> Dict[str, Any]:
@@ -265,6 +298,10 @@ class GameState:
             # Get events for this round
             current_events = self.events_manager.get_current_events(self.current_year)
             logger.debug(f"Current events: {current_events}")
+
+            # Record events if replay is enabled
+            if self.replay_manager and self.replay_manager.is_recording:
+                self.replay_manager.record_events(self.current_round, current_events)
             # Process each team's state based on their decisions
             for team_id, team in self.team_manager.teams.items():
                 try:
@@ -292,6 +329,10 @@ class GameState:
             # Persist game state if persistence manager is available
             if self.persistence_manager is not None:
                 self.persistence_manager.save_game_state(self.get_game_state())
+
+            # Record state if replay is enabled
+            if self.replay_manager and self.replay_manager.is_recording:
+                self.replay_manager.record_state(self.get_game_state())
 
             # Convert numpy values to Python native types before returning
             result = convert_numpy_values({
@@ -361,6 +402,10 @@ class GameState:
 
         self.rankings_manager = RankingsManager()
         self.prize_manager.reset_prizes()
+
+        # Reset replay manager if enabled
+        if self.replay_manager:
+            self.replay_manager.reset()
 
         # Persist reset state if persistence manager is available
         if self.persistence_manager is not None:
@@ -434,8 +479,165 @@ class GameState:
                 logger.error("Failed to save prizes")
                 return False
 
+            # Stop recording replay if active
+            if self.replay_manager and self.replay_manager.is_recording:
+                self.replay_manager.stop_recording()
+
             logger.info(f"Successfully saved game {self.game_id} to persistence")
             return True
         except Exception as e:
             logger.error(f"Error saving game: {str(e)}")
             return False
+
+    # Replay functionality methods
+
+    def start_replay(self, replay_id: str) -> Optional[Dict[str, Any]]:
+        """Start replaying a recorded game session.
+
+        Args:
+            replay_id: The ID of the replay to load.
+
+        Returns:
+            The initial game state, or None if the replay could not be loaded.
+        """
+        if not self.replay_manager:
+            logger.warning("Replay functionality is not enabled")
+            return None
+
+        # Load the replay
+        success = self.replay_manager.load_replay(replay_id)
+        if not success:
+            logger.error(f"Failed to load replay {replay_id}")
+            return None
+
+        # Start the replay
+        initial_state = self.replay_manager.start_replay()
+        if not initial_state:
+            logger.error("Failed to start replay")
+            return None
+
+        logger.info(f"Started replaying game session {replay_id}")
+        return convert_numpy_values(initial_state)
+
+    def next_replay_state(self) -> Optional[Dict[str, Any]]:
+        """Advance to the next state in the replay.
+
+        Returns:
+            The next game state, or None if at the end of the replay.
+        """
+        if not self.replay_manager or not self.replay_manager.is_replaying:
+            logger.warning("No active replay")
+            return None
+
+        next_state = self.replay_manager.next_state()
+        if not next_state:
+            logger.info("Reached end of replay")
+            return None
+
+        return convert_numpy_values(next_state)
+
+    def previous_replay_state(self) -> Optional[Dict[str, Any]]:
+        """Go back to the previous state in the replay.
+
+        Returns:
+            The previous game state, or None if at the beginning of the replay.
+        """
+        if not self.replay_manager or not self.replay_manager.is_replaying:
+            logger.warning("No active replay")
+            return None
+
+        previous_state = self.replay_manager.previous_state()
+        if not previous_state:
+            logger.info("Already at beginning of replay")
+            return None
+
+        return convert_numpy_values(previous_state)
+
+    def jump_to_replay_round(self, round_num: int) -> Optional[Dict[str, Any]]:
+        """Jump to a specific round in the replay.
+
+        Args:
+            round_num: The round number to jump to.
+
+        Returns:
+            The game state for the specified round, or None if not found.
+        """
+        if not self.replay_manager or not self.replay_manager.is_replaying:
+            logger.warning("No active replay")
+            return None
+
+        round_state = self.replay_manager.jump_to_round(round_num)
+        if not round_state:
+            logger.warning(f"Round {round_num} not found in replay")
+            return None
+
+        return convert_numpy_values(round_state)
+
+    def get_replay_metadata(self) -> Dict[str, Any]:
+        """Get metadata about the current replay.
+
+        Returns:
+            Dictionary with replay metadata, or empty dict if no replay is active.
+        """
+        if not self.replay_manager:
+            logger.warning("Replay functionality is not enabled")
+            return {}
+
+        return self.replay_manager.get_replay_metadata()
+
+    def list_available_replays(self) -> List[Dict[str, Any]]:
+        """List all available replay files.
+
+        Returns:
+            List of dictionaries with replay metadata.
+        """
+        if not self.replay_manager:
+            logger.warning("Replay functionality is not enabled")
+            return []
+
+        return self.replay_manager.list_available_replays()
+
+    def delete_replay(self, replay_id: str) -> bool:
+        """Delete a replay file.
+
+        Args:
+            replay_id: The ID of the replay to delete.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not self.replay_manager:
+            logger.warning("Replay functionality is not enabled")
+            return False
+
+        return self.replay_manager.delete_replay(replay_id)
+
+    def get_replay_decisions(self, round_num: int) -> Dict[str, Dict[str, Any]]:
+        """Get all decisions for a specific round in the replay.
+
+        Args:
+            round_num: The round number.
+
+        Returns:
+            Dictionary mapping team_id to decision data.
+        """
+        if not self.replay_manager or not self.replay_manager.is_replaying:
+            logger.warning("No active replay")
+            return {}
+
+        return self.replay_manager.get_decisions_for_round(round_num)
+
+    def get_replay_events(self, round_num: int) -> List[Dict[str, Any]]:
+        """Get all events for a specific round in the replay.
+
+        Args:
+            round_num: The round number.
+
+        Returns:
+            List of events for the round.
+        """
+        if not self.replay_manager or not self.replay_manager.is_replaying:
+            logger.warning("No active replay")
+            return []
+
+        return self.replay_manager.get_events_for_round(round_num)
