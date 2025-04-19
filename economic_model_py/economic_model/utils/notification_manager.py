@@ -21,10 +21,16 @@ class NotificationManager:
     extended to use actual Socket.IO in production.
     """
 
-    def __init__(self):
-        """Initialize the notification manager."""
+    def __init__(self, test_mode: bool = False):
+        """Initialize the notification manager.
+
+        Args:
+            test_mode: Whether to run in test mode.
+        """
         self.emitted_events = []  # For testing: track emitted events
         self.event_handlers = {}  # For testing: mock event handlers
+        self.test_mode = test_mode
+        self.listeners = []  # For testing: notification listeners
 
     def emit(self, event: str, data: Dict[str, Any], room: Optional[str] = None) -> bool:
         """
@@ -51,6 +57,15 @@ class NotificationManager:
             if event in self.event_handlers:
                 for handler in self.event_handlers[event]:
                     handler(data, room)
+
+            # Notify listeners
+            notification = {
+                'type': event,
+                'data': data,
+                'room': room
+            }
+            for listener in self.listeners:
+                listener(notification)
 
             logger.info(f"Emitted event {event} to {room or 'all'}")
             return True
@@ -166,3 +181,22 @@ class NotificationManager:
         if event_type is None:
             return self.emitted_events
         return [e for e in self.emitted_events if e['event'] == event_type]
+
+    def add_listener(self, listener: Callable[[Dict[str, Any]], None]) -> None:
+        """
+        Add a listener for notifications.
+
+        Args:
+            listener: Function that takes a notification dictionary as argument.
+        """
+        self.listeners.append(listener)
+
+    def remove_listener(self, listener: Callable[[Dict[str, Any]], None]) -> None:
+        """
+        Remove a listener for notifications.
+
+        Args:
+            listener: Function that was previously added as a listener.
+        """
+        if listener in self.listeners:
+            self.listeners.remove(listener)
