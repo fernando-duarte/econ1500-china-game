@@ -132,3 +132,13 @@ yarn-error.log*
 
 ## Duplicate package structure
 china-growth-game/economic-model/china_growth_game/
+
+# Database files
+*.db
+game_state.db
+
+# Replay files
+replays/
+
+# Local service files
+backend/services/
