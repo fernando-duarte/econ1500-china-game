@@ -396,6 +396,68 @@ def get_prize_documentation():
         content = f.read()
     return HTMLResponse(content=content)
 
+# Replay functionality endpoints
+@app.get("/replay/list")
+def list_replays():
+    """List all available replay files."""
+    replays = game_state.list_available_replays()
+    return replays
+
+@app.post("/replay/start/{replay_id}")
+def start_replay(replay_id: str):
+    """Start replaying a recorded game session."""
+    initial_state = game_state.start_replay(replay_id)
+    if initial_state is None:
+        raise GameError(message=f"Failed to start replay {replay_id}", error_code=ErrorCode.RESOURCE_NOT_FOUND, http_status_code=404)
+    return initial_state
+
+@app.get("/replay/next")
+def next_replay_state():
+    """Advance to the next state in the replay."""
+    next_state = game_state.next_replay_state()
+    if next_state is None:
+        return {"message": "Reached end of replay"}
+    return next_state
+
+@app.get("/replay/previous")
+def previous_replay_state():
+    """Go back to the previous state in the replay."""
+    previous_state = game_state.previous_replay_state()
+    if previous_state is None:
+        return {"message": "Already at beginning of replay"}
+    return previous_state
+
+@app.get("/replay/jump/{round_num}")
+def jump_to_replay_round(round_num: int):
+    """Jump to a specific round in the replay."""
+    round_state = game_state.jump_to_replay_round(round_num)
+    if round_state is None:
+        raise GameError(message=f"Round {round_num} not found in replay", error_code=ErrorCode.RESOURCE_NOT_FOUND, http_status_code=404)
+    return round_state
+
+@app.get("/replay/metadata")
+def get_replay_metadata():
+    """Get metadata about the current replay."""
+    return game_state.get_replay_metadata()
+
+@app.get("/replay/decisions/{round_num}")
+def get_replay_decisions(round_num: int):
+    """Get all decisions for a specific round in the replay."""
+    return game_state.get_replay_decisions(round_num)
+
+@app.get("/replay/events/{round_num}")
+def get_replay_events(round_num: int):
+    """Get all events for a specific round in the replay."""
+    return game_state.get_replay_events(round_num)
+
+@app.delete("/replay/{replay_id}")
+def delete_replay(replay_id: str):
+    """Delete a replay file."""
+    success = game_state.delete_replay(replay_id)
+    if not success:
+        raise GameError(message=f"Failed to delete replay {replay_id}", error_code=ErrorCode.RESOURCE_NOT_FOUND, http_status_code=404)
+    return {"message": f"Replay {replay_id} deleted successfully"}
+
 # Results and visualization endpoints
 @app.get("/results/rankings")
 def get_rankings():
