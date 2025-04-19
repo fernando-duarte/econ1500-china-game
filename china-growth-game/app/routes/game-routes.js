@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const EconomicModelService = require('../services/economic-model-service');
+const EconomicModelService = require('../../../services/economic-model-service');
 
 // Initialize the economic model service
 const economicModelService = new EconomicModelService();
@@ -15,9 +15,9 @@ router.post('/init', async (req, res) => {
     const gameState = await economicModelService.initializeGame();
     res.status(200).json(gameState);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to initialize game',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -32,9 +32,9 @@ router.post('/start', async (req, res) => {
     const gameState = await economicModelService.startGame();
     res.status(200).json(gameState);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to start game',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -49,9 +49,9 @@ router.post('/next-round', async (req, res) => {
     const result = await economicModelService.advanceRound();
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to advance to next round',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -66,11 +66,11 @@ router.get('/state', async (req, res) => {
     const gameState = await economicModelService.getGameState();
     res.status(200).json(gameState);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to get game state',
-      error: error.message 
+      error: error.message
     });
   }
 });
 
-module.exports = router; 
+module.exports = router;

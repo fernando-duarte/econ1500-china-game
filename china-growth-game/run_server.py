@@ -23,7 +23,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Path to the economic model app directory
-    model_dir = os.path.join(os.path.dirname(script_dir), 'economic_model_py', 'economic_model', 'app')
+    model_dir = os.path.join(os.path.dirname(script_dir), 'economic_model_py')
 
     # Ensure the economic model app directory exists
     if not os.path.exists(model_dir):
@@ -36,7 +36,7 @@ def main():
 
     # Build command arguments
     cmd = [
-        sys.executable, "-m", "uvicorn", "app:app",
+        sys.executable, "-m", "uvicorn", "economic_model_py.app:app",
         "--host", args.host,
         "--port", str(args.port),
         "--log-level", args.log_level

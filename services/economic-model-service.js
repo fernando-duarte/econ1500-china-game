@@ -53,7 +53,7 @@ class EconomicModelService {
   }
 
   /**
-   * Alias for health() for backward compatibility
+   * Health check for the economic model service
    */
   async healthCheck() {
     return this.health();

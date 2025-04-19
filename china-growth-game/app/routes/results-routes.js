@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const EconomicModelService = require('../services/economic-model-service');
+const EconomicModelService = require('../../../services/economic-model-service');
 
 // Initialize the economic model service
 const economicModelService = new EconomicModelService();
@@ -15,9 +15,9 @@ router.get('/rankings', async (req, res) => {
     const rankings = await economicModelService.getRankings();
     res.status(200).json(rankings);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to get rankings',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -32,7 +32,7 @@ router.get('/leaderboard', async (req, res) => {
     // Get the game state to access team information
     const gameState = await economicModelService.getGameState();
     const rankings = await economicModelService.getRankings();
-    
+
     // Format the leaderboard with team names
     const formatLeaderboard = (rankingIds, metric) => {
       return rankingIds.map((teamId, index) => {
@@ -46,7 +46,7 @@ router.get('/leaderboard', async (req, res) => {
         };
       });
     };
-    
+
     const leaderboard = {
       gdp: formatLeaderboard(rankings.gdp || [], 'Y'),
       net_exports: formatLeaderboard(rankings.net_exports || [], 'NX'),
@@ -62,14 +62,14 @@ router.get('/leaderboard', async (req, res) => {
         };
       }) : []
     };
-    
+
     res.status(200).json(leaderboard);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to get leaderboard',
-      error: error.message 
+      error: error.message
     });
   }
 });
 
-module.exports = router; 
+module.exports = router;

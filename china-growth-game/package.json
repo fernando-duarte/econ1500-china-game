@@ -2,13 +2,13 @@
   "name": "china-growth-game",
   "version": "1.0.0",
   "description": "Interactive economic simulation game for undergraduate economics courses",
-  "main": "app/server.js",
+  "main": "run_server.py",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
-    "start": "node app/server.js",
-    "dev": "nodemon app/server.js",
+    "start": "python run_server.py",
+    "dev": "python run_server.py --dev",
     "start:react": "PORT=3001 react-scripts start",
     "build:react": "react-scripts build",
     "dev:all": "concurrently \"npm run dev\" \"npm run start:react\"",
