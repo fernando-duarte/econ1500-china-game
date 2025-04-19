@@ -5,7 +5,8 @@ This module contains the FastAPI application that serves as the API
 for the China Growth Game.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Path
+from fastapi import FastAPI, HTTPException, Depends, Path, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List, Optional, Any
 import numpy as np
@@ -14,6 +15,14 @@ import logging
 import sys
 import json
 import traceback
+
+from economic_model_py.economic_model.utils.error_handling import (
+    GameError, ErrorCode, TeamNotFoundError, GameNotStartedError,
+    GameAlreadyStartedError, GameEndedError, RoundAlreadyProcessedError,
+    DecisionAlreadySubmittedError, InvalidDecisionError, TeamNameTakenError,
+    InvalidTeamNameError, PersistenceError, SaveFailedError, LoadFailedError
+)
+from economic_model_py.economic_model.utils.error_middleware import add_error_handlers
 from economic_model_py.economic_model.game.game_state import GameState
 from economic_model_py.economic_model.game.events_manager import EventsManager
 from economic_model_py.economic_model.game.randomized_events_manager import RandomizedEventsManager
@@ -61,6 +70,9 @@ app = FastAPI(title="China's Growth Game Economic Model API")
 
 # Use custom response class for handling numpy types
 app.router.default_response_class = CustomJSONResponse
+
+# Add error handlers
+add_error_handlers(app)
 
 # Pydantic models for API requests and responses
 class InitialConditions(BaseModel):
@@ -169,11 +181,16 @@ def initialize_game(config: Optional[GameConfigRequest] = None):
 def start_game():
     """Start the game with registered teams."""
     try:
+        if game_state.game_started:
+            raise GameAlreadyStartedError()
+        if game_state.game_ended:
+            raise GameEndedError()
+
         result = game_state.start_game()
         # The result is already converted to Python types by the GameState class
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise GameError(message=str(e), error_code=ErrorCode.VALIDATION_ERROR, http_status_code=400)
 
 @app.post("/game/next-round")
 def advance_to_next_round():
@@ -265,11 +282,17 @@ def get_game_state():
 def create_team(request: TeamCreateRequest):
     """Create a new team."""
     try:
+        if not game_state.game_started and game_state.game_ended:
+            raise GameEndedError()
+
         team = game_state.create_team(request.team_name)
         # The team is already converted to Python types by the GameState class
         return team
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        if "already taken" in str(e).lower():
+            raise TeamNameTakenError(team_name=request.team_name or "")
+        else:
+            raise InvalidTeamNameError(team_name=request.team_name or "", message=str(e))
 
 @app.post("/teams/decisions")
 def submit_decision(request: DecisionSubmitRequest):
@@ -283,7 +306,16 @@ def submit_decision(request: DecisionSubmitRequest):
         # The decision is already converted to Python types by the GameState class
         return decision
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        if "already submitted" in str(e).lower():
+            raise DecisionAlreadySubmittedError(team_id=request.team_id, round_num=game_state.current_round)
+        elif "not found" in str(e).lower():
+            raise TeamNotFoundError(team_id=request.team_id)
+        elif "not started" in str(e).lower():
+            raise GameNotStartedError()
+        elif "ended" in str(e).lower():
+            raise GameEndedError()
+        else:
+            raise InvalidDecisionError(team_id=request.team_id, message=str(e))
 
 @app.get("/teams/{team_id}")
 def get_team_state(team_id: str):
@@ -293,7 +325,10 @@ def get_team_state(team_id: str):
         # The team_state is already converted to Python types by the GameState class
         return team_state
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        if "not found" in str(e).lower():
+            raise TeamNotFoundError(team_id=team_id)
+        else:
+            raise GameError(message=str(e), error_code=ErrorCode.RESOURCE_NOT_FOUND, http_status_code=404)
 
 @app.post("/teams/{team_id}/edit-name")
 def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None):
@@ -302,7 +337,12 @@ def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None
         team = game_state.team_manager.edit_team_name(team_id, request.new_name)
         return team
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        if "already taken" in str(e).lower():
+            raise TeamNameTakenError(team_name=request.new_name)
+        elif "not found" in str(e).lower():
+            raise TeamNotFoundError(team_id=team_id)
+        else:
+            raise InvalidTeamNameError(team_name=request.new_name, message=str(e))
 
 # Game configuration endpoints
 @app.post("/game/config")
@@ -331,9 +371,9 @@ def save_game():
         if success:
             return {"message": "Game saved successfully", "game_id": game_state.game_id}
         else:
-            raise HTTPException(status_code=500, detail="Failed to save game")
+            raise SaveFailedError(message="Failed to save game", details={"game_id": game_state.game_id})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise GameError(message=str(e), error_code=ErrorCode.PERSISTENCE_ERROR, http_status_code=500)
 
 @app.post("/game/load/{game_id}")
 def load_game(game_id: str):
@@ -343,9 +383,9 @@ def load_game(game_id: str):
         if success:
             return {"message": "Game loaded successfully", "state": game_state.get_game_state()}
         else:
-            raise HTTPException(status_code=404, detail=f"Game {game_id} not found")
+            raise LoadFailedError(message=f"Game {game_id} not found", details={"game_id": game_id})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise GameError(message=str(e), error_code=ErrorCode.PERSISTENCE_ERROR, http_status_code=500)
 
 # Documentation endpoints
 @app.get("/documentation/prizes")
@@ -372,7 +412,10 @@ def get_team_visualizations(team_id: str):
         # The visualizations are already converted to Python types by the GameState class
         return visualizations
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        if "not found" in str(e).lower():
+            raise TeamNotFoundError(team_id=team_id)
+        else:
+            raise GameError(message=str(e), error_code=ErrorCode.RESOURCE_NOT_FOUND, http_status_code=404)
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
