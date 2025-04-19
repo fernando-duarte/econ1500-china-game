@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Path to the canonical implementation
 canonical_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                             'china_growth_game', 'economic_model', 'app')
+                             'economic_model_py', 'economic_model', 'app')
 
 # Note: We're keeping the sys.path modification for backward compatibility
 # In a proper package structure, this would be handled by proper imports
@@ -51,7 +51,7 @@ try:
     from game_state import GameState
     # Import JSON utilities for potential future use
     # These are imported here to ensure they're available if needed
-    from china_growth_game.economic_model.utils.json_utils import (
+    from economic_model_py.economic_model.utils.json_utils import (
         convert_numpy_values,
         numpy_safe_json_dumps,
         numpy_safe_json_loads,

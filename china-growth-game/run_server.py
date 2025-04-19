@@ -23,7 +23,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Path to the economic model app directory
-    model_dir = os.path.join(os.path.dirname(script_dir), 'china_growth_game', 'economic_model', 'app')
+    model_dir = os.path.join(os.path.dirname(script_dir), 'economic_model_py', 'economic_model', 'app')
 
     # Ensure the economic model app directory exists
     if not os.path.exists(model_dir):

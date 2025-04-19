@@ -20,13 +20,13 @@ if package_path not in sys.path:
     sys.path.insert(0, package_path)
 
 # Import the canonical implementation
-from china_growth_game.economic_model.game.game_state import GameState
-from china_growth_game.economic_model.game.team_management import TeamManager
-from china_growth_game.economic_model.game.events_manager import EventsManager
-from china_growth_game.economic_model.game.rankings_manager import RankingsManager
-from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
+from economic_model_py.economic_model.game.game_state import GameState
+from economic_model_py.economic_model.game.team_management import TeamManager
+from economic_model_py.economic_model.game.events_manager import EventsManager
+from economic_model_py.economic_model.game.rankings_manager import RankingsManager
+from economic_model_py.economic_model.visualization.visualization_manager import VisualizationManager
 # Import for potential future use
-from china_growth_game.economic_model.utils.json_utils import convert_numpy_values
+from economic_model_py.economic_model.utils.json_utils import convert_numpy_values
 
 # Re-export the classes for backwards compatibility
 __all__ = ['GameState', 'TeamManager', 'EventsManager', 'RankingsManager', 'VisualizationManager', 'convert_numpy_values']

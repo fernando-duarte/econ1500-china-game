@@ -12,7 +12,7 @@ This project consists of two main components with supporting modules:
 
 ### 1. Economic Model (Python)
 
-- `china_growth_game/` - The canonical implementation of the economic model (Python package)
+- `economic_model_py/` - The canonical implementation of the economic model (Python package)
   - `app.py` - Main FastAPI application entry point
   - `economic_model/` - Python-based economic simulation engine
     - `app/` - FastAPI application
@@ -36,8 +36,8 @@ This project consists of two main components with supporting modules:
 - `scripts/` - Utility scripts for running the model
 - `docs/` - Project documentation
 
-**Note:** The naming difference (`china_growth_game` vs `china-growth-game`) is intentional:
-- `china_growth_game` uses underscores as per Python package naming conventions
+**Note:** The naming convention follows standard practices for each language:
+- `economic_model_py` uses underscores as per Python package naming conventions
 - `china-growth-game` uses hyphens as per JavaScript/Node.js package naming conventions
 
 **Note:** All components have been updated to use the canonical implementation to avoid code duplication and ensure consistency.
@@ -47,7 +47,7 @@ For a detailed directory structure diagram, see [Project Structure Documentation
 ### Configuration
 
 - `.env.example` - Consolidated environment configuration template
-- `docker-compose.unified.yml` - Unified Docker Compose configuration
+- `docker-compose.yml` - Docker Compose configuration
 
 ## Key Documentation
 
@@ -163,7 +163,7 @@ Component-specific test runners are also available:
 
 ```bash
 # Economic model tests
-cd china_growth_game
+cd economic_model_py
 python -m unittest discover
 
 # Backend tests
@@ -180,7 +180,7 @@ npm test
 For production deployment, use the production Docker Compose configuration:
 
 ```
-docker-compose -f docker-compose.prod.unified.yml up -d
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ## Contributing
