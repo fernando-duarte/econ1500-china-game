@@ -313,16 +313,16 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 5 days
 
 **Subtasks:**
-1. [ ] Set up end-to-end testing framework
-2. [ ] Implement test for team creation and initialization
-3. [ ] Implement test for game start and first round
-4. [ ] Implement test for team decision submission
-5. [ ] Implement test for round advancement
-6. [ ] Implement test for event triggering and effects
-7. [ ] Implement test for prize awarding
-8. [ ] Implement test for game completion and scoring
-9. [ ] Verify all tests pass with current implementation
-10. [ ] Fix any issues found during testing
+1. [x] Set up end-to-end testing framework
+2. [x] Implement test for team creation and initialization
+3. [x] Implement test for game start and first round
+4. [x] Implement test for team decision submission
+5. [x] Implement test for round advancement
+6. [x] Implement test for event triggering and effects
+7. [x] Implement test for prize awarding
+8. [x] Implement test for game completion and scoring
+9. [x] Verify all tests pass with current implementation
+10. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - End-to-end tests cover the complete game flow from start to finish
@@ -408,7 +408,7 @@ This implementation plan breaks down the tasks identified in our review into spe
 | DOC-03    | Resolve TODO Comments | Medium | Done | | Sprint 4 |
 | EMV-01    | Model Validation Tests | High | Done | | Sprint 1-2 |
 | EMV-02    | Deterministic Replay Functionality | High | Done | | Sprint 2-3 |
-| E2E-01    | End-to-End Game Flow Tests | Medium | Not Started | | Sprint 3-4 |
+| E2E-01    | End-to-End Game Flow Tests | Medium | Done | | Sprint 3-4 |
 
 ## Definition of Done
 
