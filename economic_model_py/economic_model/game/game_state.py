@@ -207,8 +207,12 @@ class GameState:
         logger.debug(f"Results from calculate_next_round: {round_results}")
 
         # Apply event effects
-        # We don't need the applied_event_names here, but we keep the function signature for consistency
-        round_results, _ = self._apply_event_effects(round_results, current_events, team_id)
+        round_results, applied_event_names = self._apply_event_effects(round_results, current_events, team_id)
+
+        # Send event notifications if notification manager is available
+        if self.notification_manager is not None and current_events:
+            for event in current_events:
+                self.notification_manager.emit_event_triggered(event, team_id)
 
         # Apply prize effects
         round_results = self.prize_manager.apply_prize_effects(team_id, round_results)

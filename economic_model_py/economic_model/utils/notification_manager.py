@@ -16,25 +16,25 @@ logger = logging.getLogger(__name__)
 class NotificationManager:
     """
     Manages sending real-time notifications to clients.
-    
+
     This class provides a mock implementation for testing and can be
     extended to use actual Socket.IO in production.
     """
-    
+
     def __init__(self):
         """Initialize the notification manager."""
         self.emitted_events = []  # For testing: track emitted events
         self.event_handlers = {}  # For testing: mock event handlers
-        
+
     def emit(self, event: str, data: Dict[str, Any], room: Optional[str] = None) -> bool:
         """
         Emit an event to clients.
-        
+
         Args:
             event: The event name.
             data: The event data.
             room: Optional room to emit to (e.g., team ID).
-            
+
         Returns:
             True if the event was emitted successfully, False otherwise.
         """
@@ -46,27 +46,27 @@ class NotificationManager:
                 'data': data,
                 'room': room
             })
-            
+
             # Call any registered event handlers (for testing)
             if event in self.event_handlers:
                 for handler in self.event_handlers[event]:
                     handler(data, room)
-                    
+
             logger.info(f"Emitted event {event} to {room or 'all'}")
             return True
         except Exception as e:
             logger.error(f"Error emitting event {event}: {str(e)}")
             return False
-            
+
     def emit_prize_awarded(self, team_id: str, prize_type: str, prize_data: Dict[str, Any]) -> bool:
         """
         Emit a prize awarded event to a team.
-        
+
         Args:
             team_id: The ID of the team that was awarded the prize.
             prize_type: The type of prize awarded.
             prize_data: The prize data.
-            
+
         Returns:
             True if the event was emitted successfully, False otherwise.
         """
@@ -78,38 +78,69 @@ class NotificationManager:
             'effects': prize_data.get('effects', {}),
             'awarded_at': prize_data.get('awarded_at', '')
         }
-        
+
         # Emit to the specific team
         team_room = f"team-{team_id}"
         team_success = self.emit('prizeAwarded', data, room=team_room)
-        
+
         # Also emit to all clients (for admin/spectator views)
         all_success = self.emit('prizeAwardedGlobal', data)
-        
+
         return team_success and all_success
-        
+
     def emit_prizes_loaded(self, team_prizes: Dict[str, Dict[str, Dict[str, Any]]]) -> bool:
         """
         Emit a prizes loaded event to all clients.
-        
+
         Args:
             team_prizes: Dictionary mapping team_id to prize_type to prize_data.
-            
+
         Returns:
             True if the event was emitted successfully, False otherwise.
         """
         data = {
             'prizes': team_prizes
         }
-        
+
         # Emit to all clients
         return self.emit('prizesLoaded', data)
-        
+
+    def emit_event_triggered(self, event: Dict[str, Any], team_id: Optional[str] = None) -> bool:
+        """
+        Emit an event triggered notification.
+
+        Args:
+            event: The event data.
+            team_id: Optional team ID to send the notification to.
+
+        Returns:
+            True if the event was emitted successfully, False otherwise.
+        """
+        data = {
+            'event_name': event.get('name', 'Unknown Event'),
+            'event_description': event.get('description', ''),
+            'event_year': event.get('year', 0),
+            'event_effects': event.get('effects', {})
+        }
+
+        # Emit to specific team if provided
+        if team_id:
+            team_room = f"team-{team_id}"
+            team_success = self.emit('eventTriggered', data, room=team_room)
+
+            # Also emit to all clients (for admin/spectator views)
+            all_success = self.emit('eventTriggeredGlobal', data)
+
+            return team_success and all_success
+        else:
+            # Emit to all clients
+            return self.emit('eventTriggered', data)
+
     # For testing: register event handlers
     def on(self, event: str, handler: Callable) -> None:
         """
         Register an event handler for testing.
-        
+
         Args:
             event: The event name.
             handler: The event handler function.
@@ -117,18 +148,18 @@ class NotificationManager:
         if event not in self.event_handlers:
             self.event_handlers[event] = []
         self.event_handlers[event].append(handler)
-        
+
     def clear_events(self) -> None:
         """Clear all emitted events (for testing)."""
         self.emitted_events = []
-        
+
     def get_events(self, event_type: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Get all emitted events of a specific type.
-        
+
         Args:
             event_type: Optional event type to filter by.
-            
+
         Returns:
             List of emitted events.
         """

@@ -128,12 +128,12 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create test fixture with game state at different years/rounds
-2. [ ] Implement test for WTO event triggering at correct year
-3. [ ] Implement test for WTO event effects on economy
-4. [ ] Implement test for WTO event notification to teams
-5. [ ] Verify all tests pass with current implementation
-6. [ ] Fix any issues found during testing
+1. [x] Create test fixture with game state at different years/rounds
+2. [x] Implement test for WTO event triggering at correct year
+3. [x] Implement test for WTO event effects on economy
+4. [x] Implement test for WTO event notification to teams
+5. [x] Verify all tests pass with current implementation
+6. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that WTO event triggers at the correct year/condition
@@ -399,7 +399,7 @@ This implementation plan breaks down the tasks identified in our review into spe
 | PZ-04     | Prize Concurrency Tests | High | Done | | Sprint 2 |
 | PZ-05     | Prize Calculation Timing Tests | Medium | Done | | Sprint 2 |
 | EV-01     | Event Randomization Tests | High | Done | | Sprint 2 |
-| EV-02     | WTO Accession Event Tests | Medium | Not Started | | Sprint 3 |
+| EV-02     | WTO Accession Event Tests | Medium | Done | | Sprint 3 |
 | EV-03     | Financial Crisis Event Tests | Medium | Not Started | | Sprint 3 |
 | EV-04     | Natural Disaster Event Tests | Medium | Not Started | | Sprint 4 |
 | EV-05     | Technology Breakthrough Event Tests | Medium | Not Started | | Sprint 4 |
