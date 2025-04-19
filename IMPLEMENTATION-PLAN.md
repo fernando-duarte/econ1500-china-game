@@ -267,16 +267,16 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 5 days
 
 **Subtasks:**
-1. [ ] Define benchmark scenarios for economic model
-2. [ ] Create test fixtures with known inputs and expected outputs
-3. [ ] Implement validation tests for GDP calculation
-4. [ ] Implement validation tests for capital accumulation
-5. [ ] Implement validation tests for labor force growth
-6. [ ] Implement validation tests for TFP growth
-7. [ ] Implement validation tests for exchange rate effects
-8. [ ] Implement validation tests for savings rate effects
-9. [ ] Verify all tests pass with current implementation
-10. [ ] Fix any issues found during testing
+1. [x] Define benchmark scenarios for economic model
+2. [x] Create test fixtures with known inputs and expected outputs
+3. [x] Implement validation tests for GDP calculation
+4. [x] Implement validation tests for capital accumulation
+5. [x] Implement validation tests for labor force growth
+6. [x] Implement validation tests for TFP growth
+7. [x] Implement validation tests for exchange rate effects
+8. [x] Implement validation tests for savings rate effects
+9. [x] Verify all tests pass with current implementation
+10. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests compare model outputs to theoretically expected values
@@ -406,7 +406,7 @@ This implementation plan breaks down the tasks identified in our review into spe
 | DOC-01    | Complete Prize Documentation in UI | High | Not Started | | Sprint 1 |
 | DOC-02    | Standardize Error Handling | Medium | Not Started | | Sprint 3 |
 | DOC-03    | Resolve TODO Comments | Medium | Not Started | | Sprint 4 |
-| EMV-01    | Model Validation Tests | High | Not Started | | Sprint 1-2 |
+| EMV-01    | Model Validation Tests | High | Done | | Sprint 1-2 |
 | EMV-02    | Deterministic Replay Functionality | High | Not Started | | Sprint 2-3 |
 | E2E-01    | End-to-End Game Flow Tests | Medium | Not Started | | Sprint 3-4 |
 
