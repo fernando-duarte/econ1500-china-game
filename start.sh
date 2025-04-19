@@ -36,5 +36,5 @@ else
   pip install -r requirements.txt
   # Start the application
   npm install
-  npm start
+  npm run start:all
 fi

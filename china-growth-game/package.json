@@ -8,10 +8,9 @@
   },
   "scripts": {
     "start": "python run_server.py",
-    "dev": "python run_server.py --dev",
     "start:react": "PORT=3001 react-scripts start",
-    "build:react": "react-scripts build",
-    "dev:all": "concurrently \"npm run dev\" \"npm run start:react\"",
+    "build": "react-scripts build",
+    "start:all": "concurrently \"npm run start\" \"npm run start:react\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "proxy": "http://localhost:3000",

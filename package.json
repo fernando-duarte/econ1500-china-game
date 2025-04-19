@@ -5,7 +5,7 @@
   "main": "unified-server.js",
   "scripts": {
     "start": "node unified-server.js",
-    "dev": "nodemon unified-server.js",
+    "watch": "nodemon unified-server.js",
     "test": "jest"
   },
   "dependencies": {
