@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Any
 from economic_model_py.economic_model.core.solow_model import calculate_next_round
 from economic_model_py.economic_model.game.team_management import TeamManager, DEFAULT_SAVINGS_RATE, DEFAULT_EXCHANGE_RATE_POLICY
 from economic_model_py.economic_model.game.events_manager import EventsManager
+from economic_model_py.economic_model.game.randomized_events_manager import RandomizedEventsManager
 from economic_model_py.economic_model.game.rankings_manager import RankingsManager
 from economic_model_py.economic_model.game.prize_manager import PrizeManager
 from economic_model_py.economic_model.visualization.visualization_manager import VisualizationManager
@@ -29,7 +30,7 @@ class GameState:
     Uses modular components for team management, events, and rankings.
     """
 
-    def __init__(self, persistence_manager: PersistenceManager = None, notification_manager: NotificationManager = None):
+    def __init__(self, persistence_manager: PersistenceManager = None, notification_manager: NotificationManager = None, use_randomized_events: bool = False, random_seed: int = None):
         self.game_id = str(uuid.uuid4())
         self.created_at = datetime.now().isoformat()
         self.current_round = 0
@@ -40,10 +41,18 @@ class GameState:
         self.processed_rounds = set()  # Track processed rounds for idempotency
         self.persistence_manager = persistence_manager
         self.notification_manager = notification_manager
+        self.use_randomized_events = use_randomized_events
+        self.random_seed = random_seed
 
         # Initialize component managers
         self.team_manager = TeamManager()
-        self.events_manager = EventsManager()
+
+        # Initialize events manager based on configuration
+        if use_randomized_events:
+            self.events_manager = RandomizedEventsManager(seed=random_seed)
+        else:
+            self.events_manager = EventsManager()
+
         self.rankings_manager = RankingsManager()
         self.prize_manager = PrizeManager(
             persistence_manager=persistence_manager,
@@ -310,7 +319,8 @@ class GameState:
             "rankings": self.rankings_manager.rankings,
             "prizes": self.prize_manager.get_all_prizes(),
             "game_started": self.game_started,
-            "game_ended": self.game_ended
+            "game_ended": self.game_ended,
+            "use_randomized_events": self.use_randomized_events
         }
         # Convert any numpy values to Python native types
         return convert_numpy_values(state)
@@ -338,7 +348,13 @@ class GameState:
 
         # Reset component managers
         self.team_manager = TeamManager()
-        self.events_manager.reset_events()
+
+        # Reinitialize events manager based on configuration
+        if self.use_randomized_events:
+            self.events_manager = RandomizedEventsManager(seed=self.random_seed)
+        else:
+            self.events_manager = EventsManager()
+
         self.rankings_manager = RankingsManager()
         self.prize_manager.reset_prizes()
 

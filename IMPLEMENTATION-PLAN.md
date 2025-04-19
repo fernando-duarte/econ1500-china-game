@@ -109,13 +109,13 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 3 days
 
 **Subtasks:**
-1. [ ] Create test fixture for running multiple game simulations
-2. [ ] Implement statistical test framework for event occurrence
-3. [ ] Run 1000 simulations and collect event occurrence data
-4. [ ] Analyze event distribution against expected probabilities
-5. [ ] Implement chi-square test for goodness of fit
-6. [ ] Verify all tests pass with current implementation
-7. [ ] Fix any issues found during testing
+1. [x] Create test fixture for running multiple game simulations
+2. [x] Implement statistical test framework for event occurrence
+3. [x] Run 1000 simulations and collect event occurrence data
+4. [x] Analyze event distribution against expected probabilities
+5. [x] Implement chi-square test for goodness of fit
+6. [x] Verify all tests pass with current implementation
+7. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests run 1000+ simulations to gather statistical data
@@ -398,7 +398,7 @@ This implementation plan breaks down the tasks identified in our review into spe
 | PZ-03     | Prize Notification Tests | High | Done | | Sprint 1 |
 | PZ-04     | Prize Concurrency Tests | High | Done | | Sprint 2 |
 | PZ-05     | Prize Calculation Timing Tests | Medium | Done | | Sprint 2 |
-| EV-01     | Event Randomization Tests | High | Not Started | | Sprint 2 |
+| EV-01     | Event Randomization Tests | High | Done | | Sprint 2 |
 | EV-02     | WTO Accession Event Tests | Medium | Not Started | | Sprint 3 |
 | EV-03     | Financial Crisis Event Tests | Medium | Not Started | | Sprint 3 |
 | EV-04     | Natural Disaster Event Tests | Medium | Not Started | | Sprint 4 |

@@ -15,6 +15,8 @@ import sys
 import json
 import traceback
 from economic_model_py.economic_model.game.game_state import GameState
+from economic_model_py.economic_model.game.events_manager import EventsManager
+from economic_model_py.economic_model.game.randomized_events_manager import RandomizedEventsManager
 from economic_model_py.economic_model.utils.persistence import PersistenceManager
 from economic_model_py.economic_model.utils.notification_manager import NotificationManager
 from economic_model_py.economic_model.utils.json_utils import (
@@ -51,7 +53,8 @@ notification_manager = NotificationManager()
 # This implements in-memory state management with persistence and notifications
 game_state = GameState(
     persistence_manager=persistence_manager,
-    notification_manager=notification_manager
+    notification_manager=notification_manager,
+    use_randomized_events=False  # Default to deterministic events
 )
 
 app = FastAPI(title="China's Growth Game Economic Model API")
@@ -120,9 +123,14 @@ class GameStateResponse(BaseModel):
     prizes: Optional[Dict[str, Dict[str, Dict[str, Any]]]] = None
     game_started: bool
     game_ended: bool
+    use_randomized_events: Optional[bool] = False
 
 class TeamEditNameRequest(BaseModel):
     new_name: str
+
+class GameConfigRequest(BaseModel):
+    use_randomized_events: bool
+    random_seed: Optional[int] = None
 
 @app.get("/")
 def read_root():
@@ -135,10 +143,22 @@ def health_check():
 
 # Game flow endpoints
 @app.post("/game/init", response_model=GameStateResponse)
-def initialize_game():
+def initialize_game(config: Optional[GameConfigRequest] = None):
     """Initialize a new game."""
     global game_state
-    game_state = GameState(persistence_manager=persistence_manager)  # Reset the game state
+
+    # Use provided configuration or defaults
+    use_randomized_events = config.use_randomized_events if config else False
+    random_seed = config.random_seed if config else None
+
+    # Reset the game state with the specified configuration
+    game_state = GameState(
+        persistence_manager=persistence_manager,
+        notification_manager=notification_manager,
+        use_randomized_events=use_randomized_events,
+        random_seed=random_seed
+    )
+
     state = game_state.get_game_state()
     # Save the initial state to persistence
     game_state.save_game()
@@ -283,6 +303,24 @@ def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None
         return team
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# Game configuration endpoints
+@app.post("/game/config")
+def configure_game(config: GameConfigRequest):
+    """Configure game settings."""
+    global game_state
+
+    # Update game state configuration
+    game_state.use_randomized_events = config.use_randomized_events
+    game_state.random_seed = config.random_seed
+
+    # Reinitialize events manager based on new configuration
+    if game_state.use_randomized_events:
+        game_state.events_manager = RandomizedEventsManager(seed=game_state.random_seed)
+    else:
+        game_state.events_manager = EventsManager()
+
+    return {"message": "Game configuration updated", "config": config.model_dump()}
 
 # Persistence endpoints
 @app.post("/game/save")
