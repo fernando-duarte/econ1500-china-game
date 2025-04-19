@@ -1,6 +1,6 @@
-# Modularization Plan for Unified Server
+# Modularization Plan for Server
 
-This document outlines a plan to refactor the unified-server.js file into a more modular structure to improve maintainability.
+This document outlines a plan to refactor the server.js file into a more modular structure to improve maintainability.
 
 ## Proposed Directory Structure
 

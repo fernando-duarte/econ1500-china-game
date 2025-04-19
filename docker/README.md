@@ -20,7 +20,7 @@ Environment variables are defined in the `.env` file (copy from `.env.example`).
 - `FRONTEND_VERSION`, `BACKEND_VERSION`, `MODEL_VERSION`: Docker image versions
 - `FRONTEND_PORT`, `BACKEND_PORT`, `MODEL_PORT`: Service ports
 - `ENABLE_CHINA_GAME`: Set to "true" to enable China Growth Game services
-- `ENV_SUFFIX`: Suffix for volume names (dev, staging, prod)
+- `ENV_SUFFIX`: Suffix for volume names
 
 ## Docker Compose File
 

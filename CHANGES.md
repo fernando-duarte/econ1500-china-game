@@ -55,6 +55,6 @@ This document provides a summary of the changes made to address the issues ident
 ## Next Steps
 
 1. Implement the modularization plan to improve code organization
-2. Add more comprehensive tests for the unified server
+2. Add more comprehensive tests for the server
 3. Consider implementing a proper CI/CD pipeline for automated testing
 4. Review and update the frontend code for similar issues

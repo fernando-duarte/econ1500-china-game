@@ -74,15 +74,10 @@ try:
     API_KEY_NAME = "X-API-Key"
     api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-    # Get API key from environment variable
-    ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
-    if not ADMIN_API_KEY:
-        if os.environ.get("ENVIRONMENT") == "production":
-            raise ValueError("ADMIN_API_KEY must be set in production")
-        else:
-            ADMIN_API_KEY = "admin-dev-key"  # Only for development
+    # Get API key from environment variable or use default
+    ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "admin-key")
 
-    # Team authorization mapping (in production, this would be in a database)
+    # Team authorization mapping
     team_api_keys = {}
 
     # Simple rate limiting implementation
@@ -157,7 +152,7 @@ try:
     app.middleware("http")(rate_limit_middleware)
 
     # Configure CORS
-    # Get allowed origins from environment or use default for development
+    # Get allowed origins from environment or use default
     allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
     app.add_middleware(
@@ -413,10 +408,10 @@ def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# For backward compatibility with the old API
+# Calculate endpoint
 @app.post("/calculate")
 async def calculate_growth(data: Dict[Any, Any]):
-    """Calculate economic growth based on provided parameters (legacy endpoint)."""
+    """Calculate economic growth based on provided parameters."""
     try:
         # Extract parameters from the request
         savings_rate = data.get("savings_rate", 0.3)
@@ -441,7 +436,7 @@ async def calculate_growth(data: Dict[Any, Any]):
         # Clean up the temporary team
         game_state.team_manager.teams.pop(temp_team_id, None)
 
-        # Return the results in the old format for compatibility
+        # Return the results
         return {
             "output": results["Y_t"],
             "investment": results["I_t"],

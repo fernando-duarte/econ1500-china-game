@@ -41,7 +41,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // CSRF protection for API endpoints
-const csrfProtection = csrf({ cookie: { sameSite: 'strict', secure: process.env.NODE_ENV === 'production' } });
+const csrfProtection = csrf({ cookie: { sameSite: 'strict', secure: true } });
 
 // Add CSRF protection to all API routes except GET requests
 app.use('/api', (req, res, next) => {
@@ -62,7 +62,7 @@ const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   standardHeaders: true,
-  legacyHeaders: false,
+  headers: true,
   message: { error: 'Too many requests, please try again later.' }
 });
 
@@ -257,7 +257,7 @@ io.on('connection', (socket) => {
                 gameState.teams[teamId].savingsRate = savingsRate;
                 gameState.teams[teamId].exchangeRate = exchangeRate;
 
-                // Broadcast updated state to team members
+                // Broadcast state to team members
                 io.to(`team-${teamId}`).emit('teamUpdate', gameState.teams[teamId]);
                 io.to(`team-${teamId}`).emit('decisionSubmitted', { success: true });
               }
@@ -357,7 +357,7 @@ io.on('connection', (socket) => {
               // Advance the round
               const result = await economicModelService.advanceRound();
 
-              // Get the updated game state
+              // Get the game state
               const modelGameState = await economicModelService.getGameState();
 
               // Update our local game state
@@ -541,7 +541,7 @@ app.post('/api/game/advance', async (req, res) => {
 
         const result = await economicModelService.advanceRound();
 
-        // Get updated game state
+        // Get game state
         const modelGameState = await economicModelService.getGameState();
 
         // Update our state
@@ -705,7 +705,7 @@ if (require('fs').existsSync(buildPath)) {
   console.log('No build directory found, only API endpoints will be available');
   // If no build directory, at least provide some response at the root
   app.get('/', (req, res) => {
-    res.send('China Growth Game API Server - Build the frontend or use the dev server to access the UI');
+    res.send('China Growth Game API Server - Access the UI through the frontend');
   });
 }
 

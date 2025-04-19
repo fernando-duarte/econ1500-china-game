@@ -2,10 +2,10 @@
   "name": "econ1500-china-game",
   "version": "1.0.0",
   "description": "Economic simulation game for ECON1500 course",
-  "main": "unified-server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node unified-server.js",
-    "watch": "nodemon unified-server.js",
+    "start": "node server.js",
+    "watch": "nodemon server.js",
     "test": "jest"
   },
   "dependencies": {
