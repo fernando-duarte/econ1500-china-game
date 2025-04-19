@@ -4,14 +4,14 @@ This directory contains the Docker configuration for the China Growth Game proje
 
 ## Directory Structure
 
-- `dockerfiles/`: Contains all Dockerfiles for the project
-  - `Dockerfile.frontend`: Frontend development Dockerfile
-  - `Dockerfile.frontend.prod`: Frontend production Dockerfile
-  - `Dockerfile.backend`: Backend development Dockerfile
-  - `Dockerfile.model`: Model development Dockerfile
-  - `Dockerfile.model.prod`: Model production Dockerfile
-  - `Dockerfile.china-backend`: China Growth Game backend Dockerfile
-  - `Dockerfile.china-model`: China Growth Game model Dockerfile
+The project uses the following Dockerfiles located in their respective component directories:
+
+- `frontend/Dockerfile`: Frontend development Dockerfile
+- `frontend/Dockerfile.prod`: Frontend production Dockerfile
+- `backend/Dockerfile`: Backend development Dockerfile
+- `backend/Dockerfile.prod`: Backend production Dockerfile
+- `model/Dockerfile`: Model development Dockerfile
+- `model/Dockerfile.prod`: Model production Dockerfile
 
 ## Environment Variables
 
@@ -27,8 +27,8 @@ Environment variables are defined in the `.env` file (copy from `.env.example`).
 
 ## Docker Compose Files
 
-- `docker-compose.unified.yml`: Main Docker Compose file for development
-- `docker-compose.prod.unified.yml`: Production Docker Compose file
+- `docker-compose.yml`: Main Docker Compose file for development
+- `docker-compose.prod.yml`: Production Docker Compose file
 
 ## Usage
 
@@ -36,26 +36,20 @@ Environment variables are defined in the `.env` file (copy from `.env.example`).
 
 ```bash
 # Start the main application
-docker-compose -f docker-compose.unified.yml up -d
-
-# Start with China Growth Game services
-docker-compose -f docker-compose.unified.yml --profile china-game up -d
+docker-compose up -d
 
 # Stop all services
-docker-compose -f docker-compose.unified.yml down
+docker-compose down
 ```
 
 ### Production
 
 ```bash
 # Start production services
-docker-compose -f docker-compose.prod.unified.yml up -d
-
-# Start with China Growth Game services
-docker-compose -f docker-compose.prod.unified.yml --profile china-game up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 # Stop all services
-docker-compose -f docker-compose.prod.unified.yml down
+docker-compose -f docker-compose.prod.yml down
 ```
 
 ## Volumes
@@ -66,7 +60,6 @@ The following Docker volumes are used:
 - `solow-game-backend-modules-{env}`: Backend node modules
 - `solow-game-model-deps-{env}`: Model Python dependencies
 - `solow_game_model_data_{env}`: Model data (production only)
-- `china_game_model_data_{env}`: China Growth Game model data (production only)
 
 ## Networks
 
