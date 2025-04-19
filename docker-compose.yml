@@ -51,7 +51,7 @@ services:
   model:
     <<: *service-defaults
     build:
-      context: ./model
+      context: ./economic_model_py
       dockerfile: Dockerfile
     ports:
       - "8000:8000"

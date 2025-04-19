@@ -196,39 +196,17 @@ def start_game():
 def advance_to_next_round():
     """Advance to the next round, processing all team decisions."""
     try:
-        # Add more detailed logging
-        logger.info("Starting advance_to_next_round()")
-        print("Starting advance_to_next_round()", file=sys.stderr)
-        sys.stderr.flush()
-
-        try:
-            result = game_state.advance_round()
-            logger.info(f"advance_round() returned: {result}")
-            print(f"advance_round() returned", file=sys.stderr)
-            sys.stderr.flush()
-        except Exception as internal_e:
-            logger.error(f"Exception in game_state.advance_round(): {str(internal_e)}")
-            print(f"Exception in game_state.advance_round(): {str(internal_e)}", file=sys.stderr)
-            tb = traceback.format_exc()
-            logger.error(f"Traceback: {tb}")
-            print(f"Traceback: {tb}", file=sys.stderr)
-            sys.stderr.flush()
-            raise
+        result = game_state.advance_round()
 
         # Ensure result can be serialized
         try:
-            # Test if the result can be serialized - this will raise an exception if it fails
+            # Test if the result can be serialized
             json.dumps(result, cls=NumpyEncoder)
-            logger.info("Result successfully serialized to JSON")
-            print("Result successfully serialized to JSON", file=sys.stderr)
-            sys.stderr.flush()
             # The result is already converted to Python types by the GameState class
             return result
         except TypeError as e:
-            # If serialization fails, log the error and handle it
+            # If serialization fails, handle it
             logger.error(f"JSON serialization error: {str(e)}")
-            print(f"JSON serialization error: {str(e)}", file=sys.stderr)
-            sys.stderr.flush()
             # Try to identify problematic values
             fixed_result = {}
             for key, value in result.items():
@@ -236,9 +214,6 @@ def advance_to_next_round():
                     json.dumps({key: value}, cls=NumpyEncoder)
                     fixed_result[key] = value
                 except TypeError:
-                    logger.error(f"Key {key} has non-serializable value: {value}")
-                    print(f"Key {key} has non-serializable value: {value}", file=sys.stderr)
-                    sys.stderr.flush()
                     # Try to convert problematic types
                     if hasattr(value, 'tolist'):  # For numpy arrays
                         fixed_result[key] = value.tolist()
@@ -250,20 +225,12 @@ def advance_to_next_round():
 
     except ValueError as e:
         logger.error(f"ValueError in advance_to_next_round: {str(e)}")
-        print(f"ValueError in advance_to_next_round: {str(e)}", file=sys.stderr)
-        tb = traceback.format_exc()
-        logger.error(tb)
-        print(tb, file=sys.stderr)
-        sys.stderr.flush()
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # More detailed error reporting for debugging
         logger.error(f"Exception in advance_to_next_round: {str(e)}")
-        print(f"Exception in advance_to_next_round: {str(e)}", file=sys.stderr)
-        tb = traceback.format_exc()
-        logger.error(tb)
-        print(tb, file=sys.stderr)
-        sys.stderr.flush()
+        logger.error(traceback.format_exc())
         error_detail = {
             "error": str(e),
             "traceback": traceback.format_exc()
