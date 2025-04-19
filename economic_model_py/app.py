@@ -15,6 +15,8 @@ import sys
 import json
 import traceback
 from economic_model_py.economic_model.game.game_state import GameState
+from economic_model_py.economic_model.utils.persistence import PersistenceManager
+from economic_model_py.economic_model.utils.notification_manager import NotificationManager
 from economic_model_py.economic_model.utils.json_utils import (
     convert_numpy_values,
     numpy_safe_json_dumps,
@@ -41,9 +43,16 @@ try:
 except ImportError as e:
     logger.error(f"Error importing canonical implementation: {e}")
 
+# Initialize managers
+persistence_manager = PersistenceManager()
+notification_manager = NotificationManager()
+
 # Create a single instance of the game state to be used for all requests
-# This implements in-memory state management as requested
-game_state = GameState()
+# This implements in-memory state management with persistence and notifications
+game_state = GameState(
+    persistence_manager=persistence_manager,
+    notification_manager=notification_manager
+)
 
 app = FastAPI(title="China's Growth Game Economic Model API")
 
@@ -108,6 +117,7 @@ class GameStateResponse(BaseModel):
     current_year: int
     teams: Dict[str, Dict[str, Any]]
     rankings: Dict[str, List[str]]
+    prizes: Optional[Dict[str, Dict[str, Dict[str, Any]]]] = None
     game_started: bool
     game_ended: bool
 
@@ -128,8 +138,10 @@ def health_check():
 def initialize_game():
     """Initialize a new game."""
     global game_state
-    game_state = GameState()  # Reset the game state
+    game_state = GameState(persistence_manager=persistence_manager)  # Reset the game state
     state = game_state.get_game_state()
+    # Save the initial state to persistence
+    game_state.save_game()
     # The state is already converted to Python types by the GameState class
     return state
 
@@ -271,6 +283,31 @@ def edit_team_name(team_id: str = Path(...), request: TeamEditNameRequest = None
         return team
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# Persistence endpoints
+@app.post("/game/save")
+def save_game():
+    """Save the current game state to persistence."""
+    try:
+        success = game_state.save_game()
+        if success:
+            return {"message": "Game saved successfully", "game_id": game_state.game_id}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save game")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/game/load/{game_id}")
+def load_game(game_id: str):
+    """Load a game from persistence."""
+    try:
+        success = game_state.load_game(game_id)
+        if success:
+            return {"message": "Game loaded successfully", "state": game_state.get_game_state()}
+        else:
+            raise HTTPException(status_code=404, detail=f"Game {game_id} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Results and visualization endpoints
 @app.get("/results/rankings")

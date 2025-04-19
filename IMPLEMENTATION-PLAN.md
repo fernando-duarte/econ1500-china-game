@@ -32,12 +32,12 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create test fixture with database connection
-2. [ ] Implement test for saving prize data to database
-3. [ ] Implement test for retrieving prize data after simulated restart
-4. [ ] Implement test for prize data integrity across restarts
-5. [ ] Verify all tests pass with current implementation
-6. [ ] Fix any issues found during testing
+1. [x] Create test fixture with database connection
+2. [x] Implement test for saving prize data to database
+3. [x] Implement test for retrieving prize data after simulated restart
+4. [x] Implement test for prize data integrity across restarts
+5. [x] Verify all tests pass with current implementation
+6. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that prizes are correctly stored in the database
@@ -50,14 +50,14 @@ This implementation plan breaks down the tasks identified in our review into spe
 **Estimated Effort:** 2 days
 
 **Subtasks:**
-1. [ ] Create mock socket.io client for testing
-2. [ ] Implement test for GDP growth achievement prize notification
-3. [ ] Implement test for tech leadership prize notification
-4. [ ] Implement test for sustainable growth prize notification
-5. [ ] Implement test for crisis management award notification
-6. [ ] Implement test for export champion award notification
-7. [ ] Verify all tests pass with current implementation
-8. [ ] Fix any issues found during testing
+1. [x] Create mock socket.io client for testing
+2. [x] Implement test for GDP growth achievement prize notification
+3. [x] Implement test for tech leadership prize notification
+4. [x] Implement test for sustainable growth prize notification
+5. [x] Implement test for crisis management award notification
+6. [x] Implement test for export champion award notification
+7. [x] Verify all tests pass with current implementation
+8. [x] Fix any issues found during testing
 
 **Acceptance Criteria:**
 - Tests verify that socket events are emitted when prizes are awarded
@@ -394,8 +394,8 @@ This implementation plan breaks down the tasks identified in our review into spe
 | Ticket ID | Description | Priority | Status | Assigned To | Due Date |
 |-----------|-------------|----------|--------|-------------|----------|
 | PZ-01     | Prize Idempotency Tests | High | Done | | Sprint 1 |
-| PZ-02     | Prize Persistence Tests | High | Not Started | | Sprint 1 |
-| PZ-03     | Prize Notification Tests | High | Not Started | | Sprint 1 |
+| PZ-02     | Prize Persistence Tests | High | Done | | Sprint 1 |
+| PZ-03     | Prize Notification Tests | High | Done | | Sprint 1 |
 | PZ-04     | Prize Concurrency Tests | High | Done | | Sprint 2 |
 | PZ-05     | Prize Calculation Timing Tests | Medium | Done | | Sprint 2 |
 | EV-01     | Event Randomization Tests | High | Not Started | | Sprint 2 |

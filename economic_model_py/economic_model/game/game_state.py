@@ -4,18 +4,20 @@ import logging
 import traceback
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from china_growth_game.economic_model.core.solow_model import calculate_next_round
-from china_growth_game.economic_model.game.team_management import TeamManager, DEFAULT_SAVINGS_RATE, DEFAULT_EXCHANGE_RATE_POLICY
-from china_growth_game.economic_model.game.events_manager import EventsManager
-from china_growth_game.economic_model.game.rankings_manager import RankingsManager
-from china_growth_game.economic_model.game.prize_manager import PrizeManager
-from china_growth_game.economic_model.visualization.visualization_manager import VisualizationManager
-from china_growth_game.economic_model.core.solow_core import (
+from economic_model_py.economic_model.core.solow_model import calculate_next_round
+from economic_model_py.economic_model.game.team_management import TeamManager, DEFAULT_SAVINGS_RATE, DEFAULT_EXCHANGE_RATE_POLICY
+from economic_model_py.economic_model.game.events_manager import EventsManager
+from economic_model_py.economic_model.game.rankings_manager import RankingsManager
+from economic_model_py.economic_model.game.prize_manager import PrizeManager
+from economic_model_py.economic_model.visualization.visualization_manager import VisualizationManager
+from economic_model_py.economic_model.utils.persistence import PersistenceManager
+from economic_model_py.economic_model.utils.notification_manager import NotificationManager
+from economic_model_py.economic_model.core.solow_core import (
     get_default_parameters,
     calculate_openness_ratio,
     calculate_fdi_ratio
 )
-from china_growth_game.economic_model.utils.json_utils import convert_numpy_values
+from economic_model_py.economic_model.utils.json_utils import convert_numpy_values
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -27,7 +29,7 @@ class GameState:
     Uses modular components for team management, events, and rankings.
     """
 
-    def __init__(self):
+    def __init__(self, persistence_manager: PersistenceManager = None, notification_manager: NotificationManager = None):
         self.game_id = str(uuid.uuid4())
         self.created_at = datetime.now().isoformat()
         self.current_round = 0
@@ -36,12 +38,17 @@ class GameState:
         self.game_started = False
         self.game_ended = False
         self.processed_rounds = set()  # Track processed rounds for idempotency
+        self.persistence_manager = persistence_manager
+        self.notification_manager = notification_manager
 
         # Initialize component managers
         self.team_manager = TeamManager()
         self.events_manager = EventsManager()
         self.rankings_manager = RankingsManager()
-        self.prize_manager = PrizeManager()
+        self.prize_manager = PrizeManager(
+            persistence_manager=persistence_manager,
+            notification_manager=notification_manager
+        )
         self.visualization_manager = VisualizationManager()
 
         # Get default model parameters from the centralized utility function
@@ -269,6 +276,10 @@ class GameState:
             # Mark this round as processed
             self.processed_rounds.add(self.current_round)
 
+            # Persist game state if persistence manager is available
+            if self.persistence_manager is not None:
+                self.persistence_manager.save_game_state(self.get_game_state())
+
             # Convert numpy values to Python native types before returning
             result = convert_numpy_values({
                 "round": self.current_round,
@@ -331,4 +342,80 @@ class GameState:
         self.rankings_manager = RankingsManager()
         self.prize_manager.reset_prizes()
 
+        # Persist reset state if persistence manager is available
+        if self.persistence_manager is not None:
+            self.persistence_manager.save_game_state(self.get_game_state())
+
         return self.get_game_state()
+
+    def load_game(self, game_id: str) -> bool:
+        """Load a game from persistence.
+
+        Args:
+            game_id: The ID of the game to load.
+
+        Returns:
+            True if the game was loaded successfully, False otherwise.
+        """
+        if self.persistence_manager is None:
+            logger.warning("No persistence manager available, cannot load game")
+            return False
+
+        try:
+            game_state = self.persistence_manager.load_game_state(game_id)
+            if game_state is None:
+                logger.error(f"Game {game_id} not found in persistence")
+                return False
+
+            # Load basic game state
+            self.game_id = game_state.get('game_id', str(uuid.uuid4()))
+            self.created_at = game_state.get('created_at', datetime.now().isoformat())
+            self.current_round = game_state.get('current_round', 0)
+            self.current_year = game_state.get('current_year', 1980)
+            self.game_started = game_state.get('game_started', False)
+            self.game_ended = game_state.get('game_ended', False)
+
+            # Load teams
+            for team_id, team_data in game_state.get('teams', {}).items():
+                self.team_manager.teams[team_id] = team_data
+
+            # Load prizes
+            self.prize_manager.load_prizes(game_id)
+
+            # Recalculate rankings
+            self.calculate_rankings()
+
+            logger.info(f"Successfully loaded game {game_id} from persistence")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading game: {str(e)}")
+            return False
+
+    def save_game(self) -> bool:
+        """Save the current game state to persistence.
+
+        Returns:
+            True if the game was saved successfully, False otherwise.
+        """
+        if self.persistence_manager is None:
+            logger.warning("No persistence manager available, cannot save game")
+            return False
+
+        try:
+            # Save game state
+            success = self.persistence_manager.save_game_state(self.get_game_state())
+            if not success:
+                logger.error("Failed to save game state")
+                return False
+
+            # Save prizes
+            success = self.prize_manager.save_prizes(self.game_id)
+            if not success:
+                logger.error("Failed to save prizes")
+                return False
+
+            logger.info(f"Successfully saved game {self.game_id} to persistence")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving game: {str(e)}")
+            return False
