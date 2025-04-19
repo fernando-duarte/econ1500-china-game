@@ -6,12 +6,9 @@ This directory contains the Docker configuration for the China Growth Game proje
 
 The project uses the following Dockerfiles located in their respective component directories:
 
-- `frontend/Dockerfile`: Frontend development Dockerfile
-- `frontend/Dockerfile.prod`: Frontend production Dockerfile
-- `backend/Dockerfile`: Backend development Dockerfile
-- `backend/Dockerfile.prod`: Backend production Dockerfile
-- `model/Dockerfile`: Model development Dockerfile
-- `model/Dockerfile.prod`: Model production Dockerfile
+- `frontend/Dockerfile`: Frontend Dockerfile
+- `backend/Dockerfile`: Backend Dockerfile
+- `model/Dockerfile`: Model Dockerfile
 
 ## Environment Variables
 
@@ -25,41 +22,27 @@ Environment variables are defined in the `.env` file (copy from `.env.example`).
 - `ENABLE_CHINA_GAME`: Set to "true" to enable China Growth Game services
 - `ENV_SUFFIX`: Suffix for volume names (dev, staging, prod)
 
-## Docker Compose Files
+## Docker Compose File
 
-- `docker-compose.yml`: Main Docker Compose file for development
-- `docker-compose.prod.yml`: Production Docker Compose file
+- `docker-compose.yml`: Docker Compose file for the application
 
 ## Usage
 
-### Development
-
 ```bash
-# Start the main application
+# Start the application
 docker-compose up -d
 
 # Stop all services
 docker-compose down
 ```
 
-### Production
-
-```bash
-# Start production services
-docker-compose -f docker-compose.prod.yml up -d
-
-# Stop all services
-docker-compose -f docker-compose.prod.yml down
-```
-
 ## Volumes
 
 The following Docker volumes are used:
 
-- `solow-game-frontend-modules-{env}`: Frontend node modules
-- `solow-game-backend-modules-{env}`: Backend node modules
-- `solow-game-model-deps-{env}`: Model Python dependencies
-- `solow_game_model_data_{env}`: Model data (production only)
+- `frontend_node_modules`: Frontend node modules
+- `backend_node_modules`: Backend node modules
+- `model_python_deps`: Model Python dependencies
 
 ## Networks
 
@@ -73,10 +56,4 @@ All services include health checks to ensure they are running properly:
 - Backend: Checks the `/health` endpoint
 - Model: Checks the `/health` endpoint
 
-## Resource Limits
 
-Production services have resource limits defined:
-
-- Frontend: 0.5 CPU, 512MB memory
-- Backend: 0.5 CPU, 512MB memory
-- Model: 1.0 CPU, 1GB memory

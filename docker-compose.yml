@@ -19,19 +19,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NODE_VERSION: ${NODE_VERSION}
-    image: ${FRONTEND_IMAGE}:${FRONTEND_VERSION}
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app:cached
-      - frontend_node_modules:/app/node_modules
     depends_on:
       backend:
         condition: service_healthy
     environment:
-      - NODE_ENV=development
       - REACT_APP_API_URL=http://localhost:4000
       - REACT_APP_WS_URL=ws://localhost:4000
     healthcheck:
@@ -43,19 +36,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      args:
-        NODE_VERSION: ${NODE_VERSION}
-    image: ${BACKEND_IMAGE}:${BACKEND_VERSION}
     ports:
       - "4000:4000"
-    volumes:
-      - ./backend:/app:cached
-      - backend_node_modules:/app/node_modules
     depends_on:
       model:
         condition: service_healthy
     environment:
-      - NODE_ENV=development
       - PORT=4000
       - MODEL_API_URL=http://model:8000
     healthcheck:
@@ -67,17 +53,10 @@ services:
     build:
       context: ./model
       dockerfile: Dockerfile
-      args:
-        PYTHON_VERSION: ${PYTHON_VERSION}
-    image: ${MODEL_IMAGE}:${MODEL_VERSION}
     ports:
       - "8000:8000"
-    volumes:
-      - ./model:/app:cached
-      - model_python_deps:/app/.venv
     environment:
       - PYTHONUNBUFFERED=1
-      - MODEL_ENV=development
     healthcheck:
       <<: *healthcheck-defaults
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
@@ -88,8 +67,5 @@ networks:
 
 volumes:
   frontend_node_modules:
-    name: solow-game-frontend-modules-${ENV_SUFFIX:-dev}
   backend_node_modules:
-    name: solow-game-backend-modules-${ENV_SUFFIX:-dev}
   model_python_deps:
-    name: solow-game-model-deps-${ENV_SUFFIX:-dev}
